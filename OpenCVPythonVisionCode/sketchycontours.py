@@ -1,9 +1,23 @@
+import os
 import cv2 as cv
 import numpy as np
 import math
 from pynetworktables import *
 
 onRobot = True
+
+while True:
+   cameraHostname = "10.46.46.11" #example
+   cameraResponse = os.system("ping -c 1 " + cameraHostname)
+   robotHostname = "10.46.46.2" #example
+   robotResponse = os.system("ping -c 1 " + robotHostname)
+
+   #and then check the response...
+   if cameraResponse == 0 and robotResponse == 0:
+      print('IT LIVES!')
+      break
+   else:
+      print('Don\'t be impatient!')
 
 NetworkTable.SetIPAddress("10.46.46.2")
 #NetworkTable.SetIPAddress("127.0.0.1")
@@ -37,7 +51,8 @@ while True:
     # Capture a frame
     is_connected, frame = cap.read()
 
-    cv.imshow('rawImage', frame)
+    if os.environ.get('DISPLAY', None):
+       cv.imshow('rawImage', frame)
 
     # Discards the first frame of the image stream 
     if not is_connected: continue
@@ -51,7 +66,8 @@ while True:
    
     # Threshold the HSV image to filter out the blues
     mask = cv.inRange(hsv, lower_blue, upper_blue)
-    cv.imshow('colors', mask)
+    if os.environ.get('DISPLAY', None):
+      cv.imshow('colors', mask)
     
     # Erode the image to get rid of noise
     erode = cv.erode(mask, kernelErode, iterations=2)
@@ -159,12 +175,14 @@ while True:
 #             # draw the center of the circle
 #             cv.circle(result,(i[0],i[1]),2,(0,0,255),3)  
 
-   # cv.imshow('contours', contourimg)
-    #cv.imshow('image', frame)
-    #cv.imshow('mask', mask)
-    cv.imshow('result', result)
-    #cv.imshow('erode', erode)
-    #cv.imshow('dilate', dilate)
+    if os.environ.get('DISPLAY', None):
+
+       #cv.imshow('contours', contourimg)
+       #cv.imshow('image', frame)
+       #cv.imshow('mask', mask)
+       cv.imshow('result', result)
+       #cv.imshow('erode', erode)
+       #cv.imshow('dilate', dilate)
   
     # Break if a key is pressed
     k = cv.waitKey(1) & 0xFF
