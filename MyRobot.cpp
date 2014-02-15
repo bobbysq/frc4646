@@ -54,7 +54,7 @@ private:
 
 };
 
-class Catapult : public PIDOutput
+class Catapult
 {
 public:
 enum CatapultModes
@@ -92,6 +92,7 @@ enum CatapultModes
 		}
 	}
 	
+	
 	void Launch(float speed, float time)
 	{
 		isLaunchOverride = true;
@@ -100,15 +101,7 @@ enum CatapultModes
 		Set(0);
 		isLaunchOverride = false;
 	}
-	
-	void PIDWrite(float speed)
-	{
-		if(!isLaunchOverride)
-		{
-			Set(-speed);
-		}
-	}
-	
+		
 	void SetMode(CatapultModes newMode)
 	{
 		Mode = newMode;
@@ -127,7 +120,7 @@ enum CatapultModes
 		case Pickup:
 			if(IsClawAbovePickup())
 			{
-				Set(-0.1);
+				Set(0.1);
 			}
 			else
 			{
@@ -137,7 +130,7 @@ enum CatapultModes
 		case Carry:
 			if(IsClawBelowCarry())
 			{
-				Set(0.2);
+				Set(-0.2);
 			}
 			else
 			{
@@ -159,6 +152,8 @@ enum CatapultModes
 		SmartDashboard::PutNumber("ValueIGotStowPosition", StowPosition);		
 	}
 private:
+	//positive speed is release tension
+	//negative speed is pull tension
 	void Set (float speed)
 	{
 		SmartDashboard::PutNumber("CatapultSpeed", speed);
@@ -168,6 +163,7 @@ private:
 		Right2.Set(-speed);
 	}
 	
+	//poteniometer is larger when the claw is down, decreases as we pull tension
 	bool IsClawAbovePickup()
 	{
 		return Potent.GetVoltage() < CarryPosition;
