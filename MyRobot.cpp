@@ -290,6 +290,10 @@ public:
 	
 	void Autonomous(void)
 	{
+		SetPneumaticsSafe();
+		myRobot.Drive(0.5,0);
+		Wait(5);
+		myRobot.Drive(0,0);
 //		while(IsAutonomous() && !AutoHasLaunched)
 //		{
 //			//Add code to set AutoHasLaunched before the if statement where it gets checked or that code will never get called.
@@ -310,7 +314,32 @@ public:
 	
 	void ProcessDriveStick()
     {
-        myRobot.ArcadeDrive(DriveStick.GetY(), -DriveStick.GetX());
+		float driveForward = DriveStick.GetY();
+		float driveTurn = (DriveStick.GetX() * -.75);
+		if (driveForward < 0)
+		{
+			driveForward = driveForward * -driveForward;
+		}
+		else
+		{
+			driveForward = driveForward * driveForward;
+		}
+		if(driveTurn < 0)
+		{
+			driveTurn = driveTurn * -driveTurn;
+		}
+		else
+		{
+			driveTurn = driveTurn * driveTurn;
+		}
+		
+		if(DriveStick.GetRawButton(1))
+		{
+			driveForward /= 2;
+			driveTurn /= 2;
+		}
+		
+        myRobot.ArcadeDrive(driveForward, driveTurn);
         ShiftUp.Set(DriveStick.GetRawButton(3));
         ShiftDown.Set(DriveStick.GetRawButton(2));
         BackboardOut.Set(DriveStick.GetRawButton(8) || DriveStick.GetRawButton(4));
@@ -379,7 +408,7 @@ public:
 		{
 			rollerSpeed = 0;
 		}
-		RollerDrive.Set(-rollerSpeed);		
+		RollerDrive.Set(rollerSpeed);		
 	}
 	
     void OperatorControl(void)
