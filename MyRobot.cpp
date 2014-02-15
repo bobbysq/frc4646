@@ -338,10 +338,12 @@ public:
 		
 		if(LaunchStick.GetRawButton(11))
 		{
+			ThrowerPID.Disable();
 			Thrower.Set(0.1);
 		}
 		else if(LaunchStick.GetRawButton(6))
 		{
+			ThrowerPID.Disable();
 			Thrower.Set(-0.1);
 		}
 		
@@ -354,7 +356,7 @@ public:
 		{
 			rollerSpeed = 0;
 		}
-		RollerDrive.Set(rollerSpeed);		
+		RollerDrive.Set(-rollerSpeed);		
 	}
 	
     void OperatorControl(void)
