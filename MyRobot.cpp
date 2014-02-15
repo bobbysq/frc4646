@@ -56,34 +56,40 @@ private:
 
 class Catapult : public PIDOutput
 {
-	
-CANJaguar & Left1;
-CANJaguar & Left2;
-CANJaguar & Right1;
-CANJaguar & Right2;
-bool isLaunchOverride;
-
 public:
-	Catapult(CANJaguar & l1, CANJaguar & l2, CANJaguar & r1, CANJaguar & r2)
+enum CatapultModes
+{
+	Idle,
+	Manual,
+	Pickup,
+	Carry
+};
+
+	Catapult(CANJaguar & l1, CANJaguar & l2, CANJaguar & r1, CANJaguar & r2, AnalogChannel& pot)
 	:Left1(l1),
 	 Left2(l2),
 	 Right1(r1),
 	 Right2(r2),
-	 isLaunchOverride(false)
+	 Potent(pot),
+	 isLaunchOverride(false),
+	 Mode(Idle),
+	 CarryPosition(2.15),
+	 StowPosition(1.9)
+	 
 	{
+		Potent.SetVoltageForPID(true);
 		Left1.ConfigNeutralMode(CANJaguar::kNeutralMode_Brake);
 		Left2.ConfigNeutralMode(CANJaguar::kNeutralMode_Brake);
 		Right1.ConfigNeutralMode(CANJaguar::kNeutralMode_Brake);
 		Right2.ConfigNeutralMode(CANJaguar::kNeutralMode_Brake);
 	}
 	
-	void Set (float speed)
+	void SetManual(float speed)
 	{
-		SmartDashboard::PutNumber("CatapultSpeed", speed);
-		Left1.Set(speed);
-		Left2.Set(speed);
-		Right1.Set(-speed);
-		Right2.Set(-speed);
+		if(Manual == Mode)
+		{
+			Set(speed);
+		}
 	}
 	
 	void Launch(float speed, float time)
@@ -102,6 +108,87 @@ public:
 			Set(-speed);
 		}
 	}
+	
+	void SetMode(CatapultModes newMode)
+	{
+		Mode = newMode;
+	}
+	
+	void ProcessMode()
+	{
+		switch(Mode)
+		{
+		case Idle:
+			Set(0);
+			break;
+		case Manual:
+			//do nothing
+			break;
+		case Pickup:
+			if(IsClawAbovePickup())
+			{
+				Set(-0.1);
+			}
+			else
+			{
+				Set(0);
+			}
+			break;
+		case Carry:
+			if(IsClawBelowCarry())
+			{
+				Set(0.2);
+			}
+			else
+			{
+				Set(0);
+			}
+			break;
+		}
+	}
+	
+	void InitializeVariablesFromParams(Preferences* prefs)
+	{
+		CarryPosition = prefs->GetFloat("CarryPosition", 2.15);
+		StowPosition = prefs->GetFloat("StowPosition", 1.9);
+	}
+	
+	void PrintVariablesToSmartDashboard()
+	{
+		SmartDashboard::PutNumber("ValueIGotCarryPosition", CarryPosition);
+		SmartDashboard::PutNumber("ValueIGotStowPosition", StowPosition);		
+	}
+private:
+	void Set (float speed)
+	{
+		SmartDashboard::PutNumber("CatapultSpeed", speed);
+		Left1.Set(speed);
+		Left2.Set(speed);
+		Right1.Set(-speed);
+		Right2.Set(-speed);
+	}
+	
+	bool IsClawAbovePickup()
+	{
+		return Potent.GetVoltage() < CarryPosition;
+	}
+	
+	bool IsClawBelowCarry()
+	{
+		return Potent.GetVoltage() > StowPosition;
+	}
+
+	
+	CANJaguar & Left1;
+	CANJaguar & Left2;
+	CANJaguar & Right1;
+	CANJaguar & Right2;
+	AnalogChannel & Potent;
+	bool isLaunchOverride;
+	CatapultModes Mode;
+	
+	float CarryPosition;
+	float StowPosition;
 };
 
 /**
@@ -129,22 +216,19 @@ class RobotDemo : public SimpleRobot
 	Solenoid ShiftDown;
 	
 	Compressor Comp;
+
+	AnalogChannel ThrowingPotent;
 	
 	RobotDrive myRobot; // robot drive system
 	Catapult Thrower;
 	Joystick DriveStick; // only joystick
 	Joystick LaunchStick;
 	
-	AnalogChannel ThrowingPotent;
-	PIDController ThrowerPID;
 	
 	bool RollerEnabled;
 	bool AutoHasLaunched;
 		
-	float LaunchSpeed;
 	float LaunchTime;
-	float CarryPosition;
-	float StowPosition;
 	
 public:
 	RobotDemo(void):
@@ -166,54 +250,33 @@ public:
 		
 		Comp(1,8),
 		
+		ThrowingPotent(1),
 		myRobot(LeftDrive, RightDrive),
-		Thrower(CatapultDriveLeft1, CatapultDriveLeft2, CatapultDriveRight3, CatapultDriveRight4),
+		Thrower(CatapultDriveLeft1, CatapultDriveLeft2, CatapultDriveRight3, CatapultDriveRight4, ThrowingPotent),
 		DriveStick(1),
 		LaunchStick(2),
-		
-		ThrowingPotent(1),
-		ThrowerPID(-.5,-.01,0,&ThrowingPotent, &Thrower),
-		
+				
 		RollerEnabled(false),
 		AutoHasLaunched(false),
 		
-		LaunchSpeed(1),
-		LaunchTime(.3),
-		CarryPosition(2.3),
-		StowPosition(1.9)
-
-
+		LaunchTime(.3)
 
 	{
 		LiveWindow::GetInstance()->AddSensor("Thrower","Potentiometer",&ThrowingPotent);
-		LiveWindow::GetInstance()->AddActuator("Thrower","PIDControl",&ThrowerPID);
 		LiveWindow::GetInstance()->AddActuator("Thrower", "Left1", &CatapultDriveLeft1);
 		LiveWindow::GetInstance()->AddActuator("Thrower", "Left2", &CatapultDriveLeft2);
 		LiveWindow::GetInstance()->AddActuator("Thrower", "Right1", &CatapultDriveRight3);
 		LiveWindow::GetInstance()->AddActuator("Thrower", "Right2", &CatapultDriveRight4);
 		
 		InitializeVariablesFromParams();
-		
-		ThrowingPotent.SetVoltageForPID(true);
-
-		ThrowerPID.SetOutputRange(-0.5,0.5);
 		myRobot.SetExpiration(0.1);
 	}
 
 	void InitializeVariablesFromParams()
 	{
 		Preferences* prefs = Preferences::GetInstance();
-		string value = "";
-		value = prefs->GetString("LaunchSpeed", ".9");//("LaunchSpeed", 1.0);
-		LaunchSpeed = ::atof(value.c_str());
 		LaunchTime = prefs->GetFloat("LaunchTime", 0.3);
-		CarryPosition = prefs->GetFloat("CarryPosition", 2.15);
-		StowPosition = prefs->GetFloat("StowPosition", 1.9);
-		
-		float throwP = prefs->GetFloat("ThrowP", -0.75);
-		float throwI = prefs->GetFloat("ThrowI", -0.05);
-		float throwD = prefs->GetFloat("ThrowD", 0);
-		ThrowerPID.SetPID(throwP, throwI, throwD);
+		Thrower.InitializeVariablesFromParams(prefs);
 	}
 	
 	void SetPneumaticsSafe()
@@ -260,92 +323,56 @@ public:
         DefenceDown.Set(DriveStick.GetRawButton(7) || DriveStick.GetRawButton(10));
     }
 
-	void ProcessLaunchStick()
+	float GetAnalogScaled(UINT32 channel, float minimum, float maximum)
 	{
-		float catapultSpeed = LaunchStick.GetY();
-//		SmartDashboard::PutNumber("CatapultCommandedSpeed", catapultSpeed);
-		if (LaunchStick.GetRawButton(1))
-		{
-			Thrower.Set(catapultSpeed);
-		}
-		else
-		{
-			Thrower.Set(0);
-		}
-		
-		//float adjustSpeed = SmartDashboard::GetNumber("catapultAdjustSpeed");
-		//SmartDashboard::PutNumber("tstReceiveValue", adjustSpeed);
-		float adjustSpeed = 0;
-		if(LaunchStick.GetRawButton(4))
-		{
-			Thrower.Set(adjustSpeed);
-		}
-		if(LaunchStick.GetRawButton(5))
-		{
-			Thrower.Set(-adjustSpeed);
-		}
-				
-		RollerUp.Set(LaunchStick.GetRawButton(3));
-		RollerDown.Set(LaunchStick.GetRawButton(2));
-		float rollerSpeed = LaunchStick.GetZ();
-		if(LaunchStick.GetRawButton(6) || LaunchStick.GetRawButton(11))
-		{
-			RollerEnabled = true;
-		}
-		if(LaunchStick.GetRawButton(7) || LaunchStick.GetRawButton(10))
-		{
-			RollerEnabled = false;
-		}
-		if(RollerEnabled)
-		{
-			RollerDrive.Set(rollerSpeed);
-		}
-		else
-		{
-			RollerDrive.Set(0);
-		}
-		if(LaunchStick.GetRawButton(8) || LaunchStick.GetRawButton(9))
-		{
-			
-		}
-//		SmartDashboard::PutNumber("RollerSpeed *derp*", rollerSpeed);
+		const float rawValue = DriverStation::GetInstance()->GetAnalogIn(channel); //Comes in as 0 to 5
+		const float range = maximum - minimum;
+		const float scaledValue = (rawValue / 5) * range;
+		const float shiftedValue = scaledValue + minimum;
+		return shiftedValue;
 	}
 	
 	void ProcessLaunchStickOther()
 	{
+		float realLaunchSpeed = GetAnalogScaled(1, .5, 1);
+		SmartDashboard::PutNumber("LaunchSpeed", realLaunchSpeed);
 		//ThrowerControl		
 		if(LaunchStick.GetRawButton(5))
 		{
-			ThrowerPID.Reset();
-			ThrowerPID.SetSetpoint(CarryPosition);
-			ThrowerPID.Enable();
+			Thrower.SetMode(Catapult::Pickup);
 		}
 		if(LaunchStick.GetRawButton(4))
 		{
-			ThrowerPID.Reset();			
-			ThrowerPID.SetSetpoint(StowPosition);
-			ThrowerPID.Enable();
+			Thrower.SetMode(Catapult::Carry);
 		}
+		
 		if(LaunchStick.GetRawButton(7) || LaunchStick.GetRawButton(10))
 		{
-			ThrowerPID.Disable();
+			Thrower.SetMode(Catapult::Idle);
 		}
 		if(LaunchStick.GetRawButton(1))
 		{
-			ThrowerPID.Disable();
-			Thrower.Launch(LaunchSpeed, LaunchTime);
+			Thrower.SetMode(Catapult::Idle);
+			Comp.Stop();
+			Thrower.Launch(realLaunchSpeed, LaunchTime);
+			Comp.Start();
 		}
 		
 		if(LaunchStick.GetRawButton(11))
 		{
-			ThrowerPID.Disable();
-			Thrower.Set(0.1);
+			Thrower.SetMode(Catapult::Manual);
+			Thrower.SetManual(0.1);
 		}
 		else if(LaunchStick.GetRawButton(6))
 		{
-			ThrowerPID.Disable();
-			Thrower.Set(-0.1);
+			Thrower.SetMode(Catapult::Manual);
+			Thrower.SetManual(-0.1);
+		} else
+		{
+			Thrower.SetManual(0);
 		}
+		
+		Thrower.ProcessMode();
 		
 		//RollerControl
 		RollerUp.Set(LaunchStick.GetRawButton(3));
@@ -361,18 +388,12 @@ public:
 	
     void OperatorControl(void)
     {
-		ThrowerPID.Reset();
     	Comp.Start();
         InitializeVariablesFromParams();
         
-		SmartDashboard::PutNumber("ValueIGotLaunchSpeed", LaunchSpeed);
-		SmartDashboard::PutNumber("ValueIGotLaunchTime", LaunchTime);
-		SmartDashboard::PutNumber("ValueIGotCarryPosition", CarryPosition);
-		SmartDashboard::PutNumber("ValueIGotStowPosition", StowPosition);
-		SmartDashboard::PutNumber("ValueIGotP", ThrowerPID.GetP());
-		SmartDashboard::PutNumber("ValueIGotI", ThrowerPID.GetI());
+		SmartDashboard::PutNumber("ValueIGotLaunchTime", LaunchTime);		
+		Thrower.PrintVariablesToSmartDashboard();
 		
-
         myRobot.SetSafetyEnabled(true);
         while(IsOperatorControl() && IsEnabled())
         {

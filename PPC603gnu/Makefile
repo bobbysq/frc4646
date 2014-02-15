@@ -62,7 +62,7 @@ IDE_DEFINES =
 
 #BuildTool flags
 ifeq ($(DEBUG_MODE),1)
-DEBUGFLAGS_C-Compiler = -g
+DEBUGFLAGS_C-Compiler = -g -O2 -fcombine-regs -fschedule-insn
 DEBUGFLAGS_C++-Compiler = -g
 DEBUGFLAGS_Linker = -g
 DEBUGFLAGS_Partial-Image-Linker = 
@@ -87,7 +87,7 @@ PROJECT_TARGETS = SimpleTemplate/$(MODE_DIR)/SimpleTemplate.out \
 
 # SimpleTemplate
 ifeq ($(DEBUG_MODE),1)
-SimpleTemplate/$(MODE_DIR)/% : DEBUGFLAGS_C-Compiler = -g
+SimpleTemplate/$(MODE_DIR)/% : DEBUGFLAGS_C-Compiler = -g -O2 -fcombine-regs -fschedule-insn
 SimpleTemplate/$(MODE_DIR)/% : DEBUGFLAGS_C++-Compiler = -g
 SimpleTemplate/$(MODE_DIR)/% : DEBUGFLAGS_Linker = -g
 SimpleTemplate/$(MODE_DIR)/% : DEBUGFLAGS_Partial-Image-Linker = 
@@ -132,7 +132,7 @@ SimpleTemplate/$(MODE_DIR)/SimpleTemplate_clean :
 
 # SimpleTemplate_partialImage
 ifeq ($(DEBUG_MODE),1)
-SimpleTemplate_partialImage/$(MODE_DIR)/% : DEBUGFLAGS_C-Compiler = -g
+SimpleTemplate_partialImage/$(MODE_DIR)/% : DEBUGFLAGS_C-Compiler = -g -O2 -fcombine-regs -fschedule-insn
 SimpleTemplate_partialImage/$(MODE_DIR)/% : DEBUGFLAGS_C++-Compiler = -g
 SimpleTemplate_partialImage/$(MODE_DIR)/% : DEBUGFLAGS_Linker = -g
 SimpleTemplate_partialImage/$(MODE_DIR)/% : DEBUGFLAGS_Partial-Image-Linker = 
