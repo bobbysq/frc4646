@@ -79,6 +79,7 @@ public:
 	
 	void Set (float speed)
 	{
+		SmartDashboard::PutNumber("CatapultSpeed", speed);
 		Left1.Set(speed);
 		Left2.Set(speed);
 		Right1.Set(-speed);
@@ -139,6 +140,11 @@ class RobotDemo : public SimpleRobot
 	
 	bool RollerEnabled;
 	bool AutoHasLaunched;
+		
+	float LaunchSpeed;
+	float LaunchTime;
+	float CarryPosition;
+	float StowPosition;
 	
 public:
 	RobotDemo(void):
@@ -169,24 +175,47 @@ public:
 		ThrowerPID(-.5,-.01,0,&ThrowingPotent, &Thrower),
 		
 		RollerEnabled(false),
-		AutoHasLaunched(false)
+		AutoHasLaunched(false),
+		
+		LaunchSpeed(1),
+		LaunchTime(.3),
+		CarryPosition(2.3),
+		StowPosition(1.9)
+
+
 
 	{
-//		SmartDashboard::PutNumber("LaunchSpeed", 0);
-//		SmartDashboard::PutNumber("LaunchTime", 0);
-//		SmartDashboard::PutNumber("CarryPosition", 0);
-//	    SmartDashboard::PutNumber("StowPosition", 0);
 		LiveWindow::GetInstance()->AddSensor("Thrower","Potentiometer",&ThrowingPotent);
 		LiveWindow::GetInstance()->AddActuator("Thrower","PIDControl",&ThrowerPID);
 		LiveWindow::GetInstance()->AddActuator("Thrower", "Left1", &CatapultDriveLeft1);
 		LiveWindow::GetInstance()->AddActuator("Thrower", "Left2", &CatapultDriveLeft2);
 		LiveWindow::GetInstance()->AddActuator("Thrower", "Right1", &CatapultDriveRight3);
 		LiveWindow::GetInstance()->AddActuator("Thrower", "Right2", &CatapultDriveRight4);
+		
+		InitializeVariablesFromParams();
+		
 		ThrowingPotent.SetVoltageForPID(true);
+
 		ThrowerPID.SetOutputRange(-0.5,0.5);
 		myRobot.SetExpiration(0.1);
 	}
 
+	void InitializeVariablesFromParams()
+	{
+		Preferences* prefs = Preferences::GetInstance();
+		string value = "";
+		value = prefs->GetString("LaunchSpeed", ".9");//("LaunchSpeed", 1.0);
+		LaunchSpeed = ::atof(value.c_str());
+		LaunchTime = prefs->GetFloat("LaunchTime", 0.3);
+		CarryPosition = prefs->GetFloat("CarryPosition", 2.15);
+		StowPosition = prefs->GetFloat("StowPosition", 1.9);
+		
+		float throwP = prefs->GetFloat("ThrowP", -0.75);
+		float throwI = prefs->GetFloat("ThrowI", -0.05);
+		float throwD = prefs->GetFloat("ThrowD", 0);
+		ThrowerPID.SetPID(throwP, throwI, throwD);
+	}
+	
 	void SetPneumaticsSafe()
 	{
 		BackboardIn.Set(true);
@@ -284,22 +313,17 @@ public:
 	
 	void ProcessLaunchStickOther()
 	{
-		//ThrowerControl
-		float launchSpeed = 1;//SmartDashboard::GetNumber("LaunchSpeed");
-		float launchTime = .3;//SmartDashboard::GetNumber("LaunchTime");
-		float carryPosition =2.30;// SmartDashboard::GetNumber("CarryPosition");
-		float stowPosition =1.9;// SmartDashboard::GetNumber("StowPosition");
-		
+		//ThrowerControl		
 		if(LaunchStick.GetRawButton(5))
 		{
 			ThrowerPID.Reset();
-			ThrowerPID.SetSetpoint(carryPosition);
+			ThrowerPID.SetSetpoint(CarryPosition);
 			ThrowerPID.Enable();
 		}
 		if(LaunchStick.GetRawButton(4))
 		{
 			ThrowerPID.Reset();			
-			ThrowerPID.SetSetpoint(stowPosition);
+			ThrowerPID.SetSetpoint(StowPosition);
 			ThrowerPID.Enable();
 		}
 		if(LaunchStick.GetRawButton(7) || LaunchStick.GetRawButton(10))
@@ -309,7 +333,7 @@ public:
 		if(LaunchStick.GetRawButton(1))
 		{
 			ThrowerPID.Disable();
-			Thrower.Launch(launchSpeed, launchTime);
+			Thrower.Launch(LaunchSpeed, LaunchTime);
 		}
 		
 		if(LaunchStick.GetRawButton(11))
@@ -324,21 +348,38 @@ public:
 		//RollerControl
 		RollerUp.Set(LaunchStick.GetRawButton(3));
 		RollerDown.Set(LaunchStick.GetRawButton(2));
-		RollerDrive.Set(LaunchStick.GetY());		
+		
+		float rollerSpeed = LaunchStick.GetY();
+		if(rollerSpeed < 0.1 && rollerSpeed > -0.1)
+		{
+			rollerSpeed = 0;
+		}
+		RollerDrive.Set(rollerSpeed);		
 	}
 	
     void OperatorControl(void)
     {
-        Comp.Start();
+		ThrowerPID.Reset();
+    	Comp.Start();
+        InitializeVariablesFromParams();
+        
+		SmartDashboard::PutNumber("ValueIGotLaunchSpeed", LaunchSpeed);
+		SmartDashboard::PutNumber("ValueIGotLaunchTime", LaunchTime);
+		SmartDashboard::PutNumber("ValueIGotCarryPosition", CarryPosition);
+		SmartDashboard::PutNumber("ValueIGotStowPosition", StowPosition);
+		SmartDashboard::PutNumber("ValueIGotP", ThrowerPID.GetP());
+		SmartDashboard::PutNumber("ValueIGotI", ThrowerPID.GetI());
+		
+
         myRobot.SetSafetyEnabled(true);
-        while(IsOperatorControl())
+        while(IsOperatorControl() && IsEnabled())
         {
             ProcessDriveStick();
 			
             //ProcessLaunchStick();
             ProcessLaunchStickOther();
             
-            
+            SmartDashboard::PutNumber("PotentiometerValue" , ThrowingPotent.GetVoltage());
 			Wait(0.005);
 		}
 		Comp.Stop();
@@ -348,7 +389,7 @@ public:
 	{
 		SetPneumaticsSafe();
 		Comp.Start();
-		while (IsTest())
+		while (IsTest() && IsEnabled())
 		{
 			LiveWindow::GetInstance()->Run();
 			Wait(0.1);
