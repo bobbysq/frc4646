@@ -182,12 +182,12 @@ private:
 	//poteniometer is larger when the claw is down, decreases as we pull tension
 	bool IsClawAbovePickup()
 	{
-		return Potent.GetVoltage() < PickupPosition;
+		return Potent.GetVoltage() > PickupPosition;
 	}
 	
 	bool IsClawBelowCarry()
 	{
-		return Potent.GetVoltage() > CarryPosition;
+		return Potent.GetVoltage() < CarryPosition;
 	}
 
 	
@@ -238,7 +238,8 @@ class RobotDemo : public SimpleRobot
 	
 	RobotDrive myRobot; // robot drive system
 	Catapult Thrower;
-	Joystick DriveStick; // only joystick
+	Joystick DriveStickLeft; // only joystick
+	Joystick DriveStickRight;
 	Joystick LaunchStick;
 	
 	
@@ -274,8 +275,9 @@ public:
 		RightRollerDown(8),
 		myRobot(LeftDrive, RightDrive),
 		Thrower(CatapultDriveLeft1, CatapultDriveLeft2, CatapultDriveRight3, CatapultDriveRight4, ThrowingPotent),
-		DriveStick(1),
-		LaunchStick(2),
+		DriveStickLeft(1),
+		DriveStickRight(2),
+		LaunchStick(3),
 				
 		RollerEnabled(false),
 		AutoHasLaunched(false),
@@ -326,6 +328,7 @@ public:
 	
 	void Autonomous(void)
 	{
+		myRobot.SetSafetyEnabled(false);
 		SetPneumaticsSafe();
 		myRobot.Drive(0.5,0);
 		Wait(5);
@@ -350,38 +353,20 @@ public:
 	
 	void ProcessDriveStick()
     {
-		float driveForward = DriveStick.GetY();
-		float driveTurn = (DriveStick.GetX() * -.75);
-		if (driveForward < 0)
+
+		float driveLeft = DriveStickLeft.GetY();
+		float driveRight = DriveStickRight.GetY();
+		
+		if(DriveStickRight.GetRawButton(2))
 		{
-			driveForward = driveForward * -driveForward;
-		}
-		else
-		{
-			driveForward = driveForward * driveForward;
-		}
-		if(driveTurn < 0)
-		{
-			driveTurn = driveTurn * -driveTurn;
-		}
-		else
-		{
-			driveTurn = driveTurn * driveTurn;
+			driveLeft = driveLeft * 0.5;
+			driveRight = driveRight * 0.5;
 		}
 		
-		if(DriveStick.GetRawButton(1))
-		{
-			driveForward /= 2;
-			driveTurn /= 2;
-		}
-		
-        myRobot.ArcadeDrive(driveForward, driveTurn);
-        ShiftUp.Set(DriveStick.GetRawButton(3));
-        ShiftDown.Set(DriveStick.GetRawButton(2));
-        BackboardOut.Set(DriveStick.GetRawButton(8) || DriveStick.GetRawButton(4));
-        BackboardIn.Set(DriveStick.GetRawButton(9) || DriveStick.GetRawButton(5));
-        DefenceUp.Set(DriveStick.GetRawButton(6) || DriveStick.GetRawButton(11));
-        DefenceDown.Set(DriveStick.GetRawButton(7) || DriveStick.GetRawButton(10));
+        myRobot.TankDrive(driveRight, driveLeft, true);
+        
+        ShiftUp.Set(DriveStickRight.GetRawAxis(6) < -.5);
+        ShiftDown.Set(DriveStickRight.GetRawAxis(6) > .5);
     }
 
 	float GetAnalogScaled(UINT32 channel, float minimum, float maximum)
