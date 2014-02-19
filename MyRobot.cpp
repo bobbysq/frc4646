@@ -62,7 +62,8 @@ enum CatapultModes
 	Idle,
 	Manual,
 	Pickup,
-	Carry
+	Carry,
+	LaunchHold
 };
 
 	Catapult(CANJaguar & l1, CANJaguar & l2, CANJaguar & r1, CANJaguar & r2, AnalogChannel& pot)
@@ -74,7 +75,8 @@ enum CatapultModes
 	 isLaunchOverride(false),
 	 Mode(Idle),
 	 PickupPosition(2.15),
-	 CarryPosition(1.9)
+	 CarryPosition(1.9),
+	 LaunchHoldPosition(2)
 	 
 	{
 		Potent.SetVoltageForPID(true);
@@ -137,6 +139,16 @@ enum CatapultModes
 				Set(0);
 			}
 			break;
+		case LaunchHold:
+			if(IsClawBelowLaunchHold())
+			{
+				Set(-0.3);
+			}
+			else
+			{
+				Set(0);
+			}
+			break;
 		}
 	}
 	
@@ -144,18 +156,21 @@ enum CatapultModes
 	{
 		CarryPosition = prefs->GetFloat("CarryPosition", 2.15);
 		PickupPosition = prefs->GetFloat("PickupPosition", 1.9);
+		LaunchHoldPosition = prefs->GetFloat("LaunchHoldPosition", 2);
 	}
 	
 	void SaveVariablesIntoParams(Preferences* prefs)
 	{
 		prefs->PutFloat("PickupPosition", PickupPosition);
 		prefs->PutFloat("CarryPosition", CarryPosition);
+		prefs->PutFloat("LaunchHoldPosition", LaunchHoldPosition);
 	}
 	
 	void PrintVariablesToSmartDashboard()
 	{
 		SmartDashboard::PutNumber("ValueIGotPickupPosition", PickupPosition);
 		SmartDashboard::PutNumber("ValueIGotCarryPosition", CarryPosition);		
+		SmartDashboard::PutNumber("ValueIGotLaunchHoldPosition", LaunchHoldPosition);
 	}
 	
 	void SavePickup(float newValue)
@@ -167,6 +182,28 @@ enum CatapultModes
 	{
 		CarryPosition = newValue;
 	}
+	
+	void SaveLaunchHold(float newValue)
+	{
+		LaunchHoldPosition = newValue;
+	}
+
+	//poteniometer is larger when the claw is down, decreases as we pull tension
+	bool IsClawAbovePickup()
+	{
+		return Potent.GetVoltage() > PickupPosition;
+	}
+	
+	bool IsClawBelowCarry()
+	{
+		return Potent.GetVoltage() < CarryPosition;
+	}
+	
+	bool IsClawBelowLaunchHold()
+	{
+		return Potent.GetVoltage() < LaunchHoldPosition;
+	}
+
 private:
 	//positive speed is release tension
 	//negative speed is pull tension
@@ -178,19 +215,7 @@ private:
 		Right1.Set(-speed);
 		Right2.Set(-speed);
 	}
-	
-	//poteniometer is larger when the claw is down, decreases as we pull tension
-	bool IsClawAbovePickup()
-	{
-		return Potent.GetVoltage() > PickupPosition;
-	}
-	
-	bool IsClawBelowCarry()
-	{
-		return Potent.GetVoltage() < CarryPosition;
-	}
-
-	
+		
 	CANJaguar & Left1;
 	CANJaguar & Left2;
 	CANJaguar & Right1;
@@ -201,6 +226,7 @@ private:
 	
 	float PickupPosition;
 	float CarryPosition;
+	float LaunchHoldPosition;
 };
 
 /**
@@ -247,6 +273,8 @@ class RobotDemo : public SimpleRobot
 	bool AutoHasLaunched;
 		
 	float LaunchTime;
+	
+	Timer AutoTime;
 	
 public:
 	RobotDemo(void):
@@ -328,11 +356,34 @@ public:
 	
 	void Autonomous(void)
 	{
+		AutoTime.Reset();
+		AutoTime.Start();
 		myRobot.SetSafetyEnabled(false);
-		SetPneumaticsSafe();
-		myRobot.Drive(0.5,0);
-		Wait(5);
-		myRobot.Drive(0,0);
+		//SetPneumaticsSafe();
+		ShiftUp.Set(true);
+		RollerDown.Set(true);
+		Wait(0.02);
+		ShiftUp.Set(false);
+		RollerDown.Set(false);
+				
+		Thrower.SetMode(Catapult::LaunchHold);
+		RollerDrive.Set(0.3);
+		while(!Thrower.IsClawBelowLaunchHold())
+		{
+			Thrower.ProcessMode();
+			Wait(0.005);
+		}
+		
+		
+		RollerUp.Set(true);
+		Wait(0.02);
+		RollerUp.Set(false);
+		Wait(0.15);
+		Thrower.Launch(0.75, LaunchTime);
+		
+//		myRobot.Drive(0.5,0);
+//		Wait(5);
+//		myRobot.Drive(0,0);
 //		while(IsAutonomous() && !AutoHasLaunched)
 //		{
 //			//Add code to set AutoHasLaunched before the if statement where it gets checked or that code will never get called.
@@ -363,10 +414,20 @@ public:
 			driveRight = driveRight * 0.5;
 		}
 		
+		if(DriveStickRight.GetRawButton(1))
+		{
+			driveLeft = driveRight;
+		}
+		
         myRobot.TankDrive(driveRight, driveLeft, true);
         
         ShiftUp.Set(DriveStickRight.GetRawAxis(6) < -.5);
         ShiftDown.Set(DriveStickRight.GetRawAxis(6) > .5);
+        
+//        BackboardIn.Set(DriveStickRight.GetRawButton(7));
+//        BackboardOut.Set(DriveStickRight.GetRawButton(8));
+//        DefenceUp.Set(DriveStickRight.GetRawButton(9));
+//        DefenceDown.Set(DriveStickRight.GetRawButton(10));
     }
 
 	float GetAnalogScaled(UINT32 channel, float minimum, float maximum)
@@ -378,18 +439,18 @@ public:
 		return shiftedValue;
 	}
 	
-	float GetThrottleScaledToPositive(Joystick& stick)
+	float ScaleThrottleToPositive(float rawValue)
 	{
-		const float rawValue = -stick.GetZ(); //-1 to 1
-		const float shiftedValue = rawValue + 1; //0 to 2
+		const float flippedValue = -rawValue; //-1 to 1
+		const float shiftedValue = flippedValue + 1; //0 to 2
 		const float scaledValue = shiftedValue *.25; //0 to .5
-		return scaledValue;
+		return scaledValue;		
 	}
 	
 	void ProcessLaunchStickOther()
 	{
 //		float realLaunchSpeed = GetAnalogScaled(1, .5, 1);
-		float realLaunchSpeed = 0.5 + GetThrottleScaledToPositive(LaunchStick);
+		float realLaunchSpeed = 0.5 + ScaleThrottleToPositive(LaunchStick.GetZ());
 		SmartDashboard::PutNumber("LaunchSpeed", realLaunchSpeed);
 		//ThrowerControl		
 		if(LaunchStick.GetRawButton(5))
@@ -438,6 +499,64 @@ public:
 		{
 			rollerSpeed = 0;
 		}
+		RollerDrive.Set(rollerSpeed);
+	}
+	
+	void ProcessLaunchStickExtreme3d()
+	{
+		float realLaunchSpeed = 0.5 + ScaleThrottleToPositive(LaunchStick.GetRawAxis(4));
+		SmartDashboard::PutNumber("LaunchSpeed", realLaunchSpeed);
+		//ThrowerControl		
+		if(LaunchStick.GetRawButton(3))
+		{
+			Thrower.SetMode(Catapult::Pickup);
+		}
+		if(LaunchStick.GetRawButton(5))
+		{
+			Thrower.SetMode(Catapult::Carry);
+		}
+		if(LaunchStick.GetRawButton(2))
+		{
+			Thrower.SetMode(Catapult::LaunchHold);
+		}
+		
+		if(LaunchStick.GetRawButton(9) || LaunchStick.GetRawButton(10))
+		{
+			Thrower.SetMode(Catapult::Idle);
+		}
+		if(LaunchStick.GetRawButton(1))
+		{
+			Thrower.SetMode(Catapult::Idle);
+			Comp.Stop();
+			Thrower.Launch(realLaunchSpeed, LaunchTime);
+			Comp.Start();
+		}
+		
+		if(LaunchStick.GetRawButton(7) || LaunchStick.GetRawButton(8))
+		{
+			Thrower.SetMode(Catapult::Manual);
+			Thrower.SetManual(-0.2);
+		}
+		else if(LaunchStick.GetRawButton(11) || LaunchStick.GetRawButton(12))
+		{
+			Thrower.SetMode(Catapult::Manual);
+			Thrower.SetManual(0.1);
+		} else
+		{
+			Thrower.SetManual(0);
+		}
+		
+		Thrower.ProcessMode();
+		
+		//RollerControl
+		RollerUp.Set(LaunchStick.GetRawButton(6));
+		RollerDown.Set(LaunchStick.GetRawButton(4));
+		
+		float rollerSpeed = LaunchStick.GetY();
+		if(rollerSpeed < 0.1 && rollerSpeed > -0.1)
+		{
+			rollerSpeed = 0;
+		}
 		RollerDrive.Set(rollerSpeed);		
 	}
 	
@@ -454,8 +573,8 @@ public:
         {
             ProcessDriveStick();
 			
-            //ProcessLaunchStick();
-            ProcessLaunchStickOther();
+//            ProcessLaunchStickOther();
+            ProcessLaunchStickExtreme3d();
             
             SmartDashboard::PutNumber("PotentiometerValue" , ThrowingPotent.GetVoltage());
 //			SmartDashboard::PutNumber("LeftRollerUp", LeftRollerUp.Get());
@@ -471,33 +590,39 @@ public:
 	{
 		SetPneumaticsSafe();
 		Comp.Start();
-		bool previousSaveButton = false;
+		bool valuesChanged = false;
 		while (IsTest() && IsEnabled())
 		{
 			LiveWindow::GetInstance()->Run();
 
-			if(LaunchStick.GetRawButton(5))
+//			if(LaunchStick.GetRawButton(5))
+			if(LaunchStick.GetRawButton(3))
 			{
 				Thrower.SavePickup(ThrowingPotent.GetVoltage());
+				valuesChanged = true;
 			}
-			if(LaunchStick.GetRawButton(4))
+//			if(LaunchStick.GetRawButton(4))
+			if(LaunchStick.GetRawButton(5))
 			{
 				Thrower.SaveCarry(ThrowingPotent.GetVoltage());
+				valuesChanged = true;
 			}
+			if(LaunchStick.GetRawButton(2))
+			{
+				Thrower.SaveLaunchHold(ThrowingPotent.GetVoltage());
+				valuesChanged = true;
+			}
+			
 			
 			if(LaunchStick.GetRawButton(1))
 			{
-				if(!previousSaveButton)
+				if(valuesChanged)
 				{
 					SaveVariablesToParams();
+					valuesChanged = false;
 				}
-				previousSaveButton = true;
 			}
-			else
-			{
-				previousSaveButton = false;
-			}
-			Wait(0.1);
+			Wait(0.01);
 		}
 		Comp.Stop();
 	}
