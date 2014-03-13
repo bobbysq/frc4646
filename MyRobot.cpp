@@ -168,9 +168,9 @@ enum CatapultModes
 	
 	void PrintVariablesToSmartDashboard()
 	{
-		SmartDashboard::PutNumber("ValueIGotPickupPosition", PickupPosition);
-		SmartDashboard::PutNumber("ValueIGotCarryPosition", CarryPosition);		
-		SmartDashboard::PutNumber("ValueIGotLaunchHoldPosition", LaunchHoldPosition);
+//		SmartDashboard::PutNumber("ValueIGotPickupPosition", PickupPosition);
+//		SmartDashboard::PutNumber("ValueIGotCarryPosition", CarryPosition);		
+//		SmartDashboard::PutNumber("ValueIGotLaunchHoldPosition", LaunchHoldPosition);
 	}
 	
 	void SavePickup(float newValue)
@@ -209,7 +209,7 @@ private:
 	//negative speed is pull tension
 	void Set (float speed)
 	{
-		SmartDashboard::PutNumber("CatapultSpeed", speed);
+//		SmartDashboard::PutNumber("CatapultSpeed", speed);
 		Left1.Set(speed);
 		Left2.Set(speed);
 		Right1.Set(-speed);
@@ -244,12 +244,13 @@ class RobotDemo : public SimpleRobot
 	CANJaguar CatapultDriveRight3;
 	CANJaguar CatapultDriveRight4;
 	Talon RollerDrive;
-	Solenoid BackboardOut;
-	Solenoid BackboardIn;
+//	Solenoid BackboardOut;
+//	Solenoid BackboardIn;
 	Solenoid RollerDown;
 	Solenoid RollerUp;
-	Solenoid DefenceUp;
-	Solenoid DefenceDown;
+//	Solenoid DefenceUp;
+//	Solenoid DefenceDown;
+	Solenoid CatapultEnable;
 	Solenoid ShiftUp;
 	Solenoid ShiftDown;
 	
@@ -285,12 +286,13 @@ public:
 		CatapultDriveRight3 (6),
 		CatapultDriveRight4 (7),
 		RollerDrive (3),
-		BackboardOut(8),
-		BackboardIn(7),
+//		BackboardOut(8),
+//		BackboardIn(7),
 		RollerDown(1),
 		RollerUp(2),
-		DefenceUp(6),
-		DefenceDown(5),
+//		DefenceUp(6),
+//		DefenceDown(5),
+		CatapultEnable(7),
 		ShiftUp(3),
 		ShiftDown(4),
 		
@@ -343,63 +345,66 @@ public:
 	
 	void SetPneumaticsSafe()
 	{
-		BackboardIn.Set(true);
+//		BackboardIn.Set(true);
 		RollerUp.Set(true);
-		DefenceUp.Set(true);
+//		DefenceUp.Set(true);
 		ShiftDown.Set(true);
+		CatapultEnable.Set(true);
 		Wait(0.02);
-		BackboardIn.Set(false);
+//		BackboardIn.Set(false);
 		RollerUp.Set(false);
-		DefenceUp.Set(false);
+//		DefenceUp.Set(false);
 		ShiftDown.Set(false);
+		CatapultEnable.Set(false);
 	}
 	
 	void Autonomous(void)
 	{
-		AutoTime.Reset();
-		AutoTime.Start();
 		myRobot.SetSafetyEnabled(false);
-		//SetPneumaticsSafe();
-		ShiftUp.Set(true);
-		RollerDown.Set(true);
+		CatapultEnable.Set(true);
 		Wait(0.02);
-		ShiftUp.Set(false);
-		RollerDown.Set(false);
-				
-		Thrower.SetMode(Catapult::LaunchHold);
-		RollerDrive.Set(0.3);
-		while(!Thrower.IsClawBelowLaunchHold())
-		{
-			Thrower.ProcessMode();
-			Wait(0.005);
-		}
+		CatapultEnable.Set(false);
 		
+		myRobot.Drive(0.5, 0);
+		Wait(2);
+		myRobot.Drive(0,0);
 		
-		RollerUp.Set(true);
-		Wait(0.02);
-		RollerUp.Set(false);
-		Wait(0.15);
-		Thrower.Launch(0.75, LaunchTime);
-		
-//		myRobot.Drive(0.5,0);
-//		Wait(5);
-//		myRobot.Drive(0,0);
-//		while(IsAutonomous() && !AutoHasLaunched)
+		//		float timeForRollersToGoUp = DriverStation::GetInstance()->GetAnalogIn(1);
+//		float powerForDrive = DriverStation::GetInstance()->GetAnalogIn(2);
+//		float timeForDrive = DriverStation::GetInstance()->GetAnalogIn(3);
+//		float powerForLaunch = DriverStation::GetInstance()->GetAnalogIn(4);
+//		
+//		AutoTime.Reset();
+//		AutoTime.Start();
+//		myRobot.SetSafetyEnabled(false);
+//		//SetPneumaticsSafe();
+//		ShiftUp.Set(true);
+//		RollerDown.Set(true);
+//		CatapultEnable.Set(true);
+//		Wait(0.02);
+//		ShiftUp.Set(false);
+//		RollerDown.Set(false);
+//		CatapultEnable.Set(false);
+//				
+//		Thrower.SetMode(Catapult::LaunchHold);
+//		RollerDrive.Set(0.3);
+//		while(!Thrower.IsClawBelowLaunchHold())
 //		{
-//			//Add code to set AutoHasLaunched before the if statement where it gets checked or that code will never get called.
-//			
-//			
-//			if(targetDetected)
-//			{
-//				Thrower.Set(SmartDashboard::GetNumber("AutonomousLaunchPowah"));
-				//TODO If 7 seconds time out of Autonomous, launch anyway
-				//TODO Make a check if launched function before drive
-				//TODO Add code to drive robot forward certain distance
-//				AutoHasLaunched = true;
-//				break;
-//			}
+//			Thrower.ProcessMode();
+//			Wait(0.005);
 //		}
 //		
+//		
+//		RollerUp.Set(true);
+//		Wait(0.02);
+//		RollerUp.Set(false);
+//		
+//		
+//		Wait(timeForRollersToGoUp);
+//		myRobot.Drive(powerForDrive, 0);
+//		Wait(timeForDrive);
+//		Thrower.Launch(powerForLaunch, LaunchTime);
+//		myRobot.Drive(0, 0);
 	}
 	
 	void ProcessDriveStick()
@@ -451,7 +456,7 @@ public:
 	{
 //		float realLaunchSpeed = GetAnalogScaled(1, .5, 1);
 		float realLaunchSpeed = 0.5 + ScaleThrottleToPositive(LaunchStick.GetZ());
-		SmartDashboard::PutNumber("LaunchSpeed", realLaunchSpeed);
+//		SmartDashboard::PutNumber("LaunchSpeed", realLaunchSpeed);
 		//ThrowerControl		
 		if(LaunchStick.GetRawButton(5))
 		{
@@ -505,7 +510,7 @@ public:
 	void ProcessLaunchStickExtreme3d()
 	{
 		float realLaunchSpeed = 0.5 + ScaleThrottleToPositive(LaunchStick.GetRawAxis(4));
-		SmartDashboard::PutNumber("LaunchSpeed", realLaunchSpeed);
+//		SmartDashboard::PutNumber("LaunchSpeed", realLaunchSpeed);
 		//ThrowerControl		
 		if(LaunchStick.GetRawButton(3))
 		{
@@ -565,8 +570,8 @@ public:
     	Comp.Start();
         InitializeVariablesFromParams();
         
-		SmartDashboard::PutNumber("ValueIGotLaunchTime", LaunchTime);		
-		Thrower.PrintVariablesToSmartDashboard();
+//		SmartDashboard::PutNumber("ValueIGotLaunchTime", LaunchTime);		
+//		Thrower.PrintVariablesToSmartDashboard();
 		
         myRobot.SetSafetyEnabled(true);
         while(IsOperatorControl() && IsEnabled())
@@ -576,7 +581,7 @@ public:
 //            ProcessLaunchStickOther();
             ProcessLaunchStickExtreme3d();
             
-            SmartDashboard::PutNumber("PotentiometerValue" , ThrowingPotent.GetVoltage());
+//            SmartDashboard::PutNumber("PotentiometerValue" , ThrowingPotent.GetVoltage());
 //			SmartDashboard::PutNumber("LeftRollerUp", LeftRollerUp.Get());
 //			SmartDashboard::PutNumber("LeftRollerDown", LeftRollerDown.Get());
 //			SmartDashboard::PutNumber("RightRollerUp", RightRollerUp.Get());
