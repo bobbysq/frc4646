@@ -152,6 +152,13 @@ enum CatapultModes
 		}
 	}
 	
+	void InitializeVariablesToDefault()
+	{
+		PickupPosition = 2.15;
+		CarryPosition = 1.9;
+		LaunchHoldPosition = 2;	 	
+	}
+	
 	void InitializeVariablesFromParams(FILE* fp)
 	{
 		fscanf(fp, "%f %f %f", PickupPosition, CarryPosition, LaunchHoldPosition);
@@ -327,8 +334,15 @@ public:
 	void InitializeVariablesFromParams()
 	{
 		FILE* fp = fopen("FRC4646.txt", "r");
-		Thrower.InitializeVariablesFromParams(fp);
-		fclose(fp);
+		if(fp)
+		{
+			Thrower.InitializeVariablesFromParams(fp);
+			fclose(fp);
+		}
+		else
+		{
+			Thrower.InitializeVariablesToDefault();
+		}
 	}
 	
 	void SaveVariablesToParams()
