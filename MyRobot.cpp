@@ -152,18 +152,14 @@ enum CatapultModes
 		}
 	}
 	
-	void InitializeVariablesFromParams(Preferences* prefs)
+	void InitializeVariablesFromParams(FILE* fp)
 	{
-		CarryPosition = prefs->GetFloat("CarryPosition", 2.15);
-		PickupPosition = prefs->GetFloat("PickupPosition", 1.9);
-		LaunchHoldPosition = prefs->GetFloat("LaunchHoldPosition", 2);
+		fscanf(fp, "%f %f %f", PickupPosition, CarryPosition, LaunchHoldPosition);
 	}
 	
-	void SaveVariablesIntoParams(Preferences* prefs)
+	void SaveVariablesIntoParams(FILE* fp)
 	{
-		prefs->PutFloat("PickupPosition", PickupPosition);
-		prefs->PutFloat("CarryPosition", CarryPosition);
-		prefs->PutFloat("LaunchHoldPosition", LaunchHoldPosition);
+		fprintf(fp, "%f %f %f", PickupPosition, CarryPosition, LaunchHoldPosition);
 	}
 	
 	void PrintVariablesToSmartDashboard()
@@ -269,7 +265,6 @@ class RobotDemo : public SimpleRobot
 	Joystick DriveStickRight;
 	Joystick LaunchStick;
 	
-	
 	bool RollerEnabled;
 	bool AutoHasLaunched;
 		
@@ -314,7 +309,7 @@ public:
 		
 		LaunchTime(.3)
 
-	{
+	{		
 		LiveWindow::GetInstance()->AddSensor("Thrower","Potentiometer",&ThrowingPotent);
 		LiveWindow::GetInstance()->AddActuator("Thrower", "Left1", &CatapultDriveLeft1);
 		LiveWindow::GetInstance()->AddActuator("Thrower", "Left2", &CatapultDriveLeft2);
@@ -331,16 +326,17 @@ public:
 
 	void InitializeVariablesFromParams()
 	{
-		Preferences* prefs = Preferences::GetInstance();
-		LaunchTime = prefs->GetFloat("LaunchTime", 0.3);
-		Thrower.InitializeVariablesFromParams(prefs);
+		FILE* fp = fopen("FRC4646.txt", "r");
+		Thrower.InitializeVariablesFromParams(fp);
+		fclose(fp);
 	}
 	
 	void SaveVariablesToParams()
 	{
-		Preferences* prefs = Preferences::GetInstance();
-		Thrower.SaveVariablesIntoParams(prefs);
-		prefs->Save();
+		FILE* fp = fopen("FRC4646.txt", "w");
+		Thrower.SaveVariablesIntoParams(fp);
+		fflush(fp);
+		fclose(fp);
 	}
 	
 	void SetPneumaticsSafe()
