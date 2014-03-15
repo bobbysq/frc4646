@@ -470,14 +470,14 @@ public:
 	{
 		const float flippedValue = -rawValue; //-1 to 1
 		const float shiftedValue = flippedValue + 1; //0 to 2
-		const float scaledValue = shiftedValue *.25; //0 to .5
+		const float scaledValue = shiftedValue *.125; //0 to .25
 		return scaledValue;		
 	}
 	
 	void ProcessLaunchStickOther()
 	{
 //		float realLaunchSpeed = GetAnalogScaled(1, .5, 1);
-		float realLaunchSpeed = 0.5 + ScaleThrottleToPositive(LaunchStick.GetZ());
+		float realLaunchSpeed = 0.75 + ScaleThrottleToPositive(LaunchStick.GetZ());
 //		SmartDashboard::PutNumber("LaunchSpeed", realLaunchSpeed);
 		//ThrowerControl		
 		if(LaunchStick.GetRawButton(5))
