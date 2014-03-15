@@ -54,6 +54,10 @@ private:
 
 };
 
+const float LOW_POT = 1.566;
+const float MID_POT = 1.951;
+const float HIGH_POT = 3.179;
+
 class Catapult
 {
 public:
@@ -74,9 +78,9 @@ enum CatapultModes
 	 Potent(pot),
 	 isLaunchOverride(false),
 	 Mode(Idle),
-	 PickupPosition(2.15),
-	 CarryPosition(1.9),
-	 LaunchHoldPosition(2)
+	 PickupPosition(LOW_POT),
+	 CarryPosition(HIGH_POT),
+	 LaunchHoldPosition(MID_POT)
 	 
 	{
 		Potent.SetVoltageForPID(true);
@@ -154,6 +158,10 @@ enum CatapultModes
 	
 	void InitializeVariablesToDefault()
 	{
+		 PickupPosition= LOW_POT;
+		 CarryPosition = HIGH_POT;
+		 LaunchHoldPosition = MID_POT;
+
 		PickupPosition = 2.15;
 		CarryPosition = 1.9;
 		LaunchHoldPosition = 2;	 	
@@ -161,12 +169,16 @@ enum CatapultModes
 	
 	void InitializeVariablesFromParams(FILE* fp)
 	{
-		fscanf(fp, "%f %f %f", PickupPosition, CarryPosition, LaunchHoldPosition);
+		 PickupPosition= LOW_POT;
+		 CarryPosition = HIGH_POT;
+		 LaunchHoldPosition = MID_POT;
+
+		//		fscanf(fp, "%f %f %f", PickupPosition, CarryPosition, LaunchHoldPosition);
 	}
 	
 	void SaveVariablesIntoParams(FILE* fp)
 	{
-		fprintf(fp, "%f %f %f", PickupPosition, CarryPosition, LaunchHoldPosition);
+//		fprintf(fp, "%f %f %f", PickupPosition, CarryPosition, LaunchHoldPosition);
 	}
 	
 	void PrintVariablesToSmartDashboard()
