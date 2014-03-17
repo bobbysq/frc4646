@@ -474,64 +474,9 @@ public:
 		return scaledValue;		
 	}
 	
-	void ProcessLaunchStickOther()
-	{
-//		float realLaunchSpeed = GetAnalogScaled(1, .5, 1);
-		float realLaunchSpeed = 0.75 + ScaleThrottleToPositive(LaunchStick.GetZ());
-//		SmartDashboard::PutNumber("LaunchSpeed", realLaunchSpeed);
-		//ThrowerControl		
-		if(LaunchStick.GetRawButton(5))
-		{
-			Thrower.SetMode(Catapult::Pickup);
-		}
-		if(LaunchStick.GetRawButton(4))
-		{
-			Thrower.SetMode(Catapult::Carry);
-		}
-		
-		if(LaunchStick.GetRawButton(7) || LaunchStick.GetRawButton(10))
-		{
-			Thrower.SetMode(Catapult::Idle);
-		}
-		if(LaunchStick.GetRawButton(1))
-		{
-			Thrower.SetMode(Catapult::Idle);
-			Comp.Stop();
-			Thrower.Launch(realLaunchSpeed, LaunchTime);
-			Comp.Start();
-		}
-		
-		if(LaunchStick.GetRawButton(11))
-		{
-			Thrower.SetMode(Catapult::Manual);
-			Thrower.SetManual(0.1);
-		}
-		else if(LaunchStick.GetRawButton(6))
-		{
-			Thrower.SetMode(Catapult::Manual);
-			Thrower.SetManual(-0.1);
-		} else
-		{
-			Thrower.SetManual(0);
-		}
-		
-		Thrower.ProcessMode();
-		
-		//RollerControl
-		RollerUp.Set(LaunchStick.GetRawButton(3));
-		RollerDown.Set(LaunchStick.GetRawButton(2));
-		
-		float rollerSpeed = LaunchStick.GetY();
-		if(rollerSpeed < 0.1 && rollerSpeed > -0.1)
-		{
-			rollerSpeed = 0;
-		}
-		RollerDrive.Set(rollerSpeed);
-	}
-	
 	void ProcessLaunchStickExtreme3d()
 	{
-		float realLaunchSpeed = 0.5 + ScaleThrottleToPositive(LaunchStick.GetRawAxis(4));
+		float realLaunchSpeed = 0.75 + ScaleThrottleToPositive(LaunchStick.GetRawAxis(4));
 //		SmartDashboard::PutNumber("LaunchSpeed", realLaunchSpeed);
 		//ThrowerControl		
 		if(LaunchStick.GetRawButton(3))
