@@ -291,6 +291,9 @@ class RobotDemo : public SimpleRobot
 	
 	Timer AutoTime;
 	
+	bool PreviousTrigger;
+	bool ShiftedLastTime;
+	
 public:
 	RobotDemo(void):
 		LeftDrive (1),
@@ -326,7 +329,9 @@ public:
 		RollerEnabled(false),
 		AutoHasLaunched(false),
 		
-		LaunchTime(.3)
+		LaunchTime(.3),
+		PreviousTrigger(true),
+		ShiftedLastTime(false)
 
 	{		
 		LiveWindow::GetInstance()->AddSensor("Thrower","Potentiometer",&ThrowingPotent);
@@ -372,6 +377,8 @@ public:
 //		DefenceUp.Set(true);
 		ShiftDown.Set(true);
 		CatapultEnable.Set(true);
+		PreviousTrigger = false;
+		ShiftedLastTime = false;
 		Wait(0.02);
 //		BackboardIn.Set(false);
 		RollerUp.Set(false);
@@ -431,7 +438,6 @@ public:
 	
 	void ProcessDriveStick()
     {
-
 		float driveLeft = DriveStickLeft.GetY();
 		float driveRight = DriveStickRight.GetY();
 		
@@ -440,21 +446,30 @@ public:
 			driveLeft = driveLeft * 0.5;
 			driveRight = driveRight * 0.5;
 		}
+        myRobot.TankDrive(driveRight, driveLeft, true);
 		
-		if(DriveStickRight.GetRawButton(1))
+		bool currentTrigger = DriveStickLeft.GetRawButton(1) || DriveStickRight.GetRawButton(1);
+		
+		if(ShiftedLastTime)
 		{
-			driveLeft = driveRight;
+			ShiftDown.Set(false);
+			ShiftUp.Set(false);
+			ShiftedLastTime = false;
 		}
 		
-        myRobot.TankDrive(driveRight, driveLeft, true);
-        
-        ShiftUp.Set(DriveStickRight.GetRawAxis(6) < -.5);
-        ShiftDown.Set(DriveStickRight.GetRawAxis(6) > .5);
-        
-//        BackboardIn.Set(DriveStickRight.GetRawButton(7));
-//        BackboardOut.Set(DriveStickRight.GetRawButton(8));
-//        DefenceUp.Set(DriveStickRight.GetRawButton(9));
-//        DefenceDown.Set(DriveStickRight.GetRawButton(10));
+		if(currentTrigger != PreviousTrigger)
+		{
+			if(currentTrigger)
+			{
+				ShiftUp.Set(true);
+			}
+			else
+			{
+				ShiftDown.Set(true);
+			}
+			PreviousTrigger = currentTrigger;
+			ShiftedLastTime = true;
+		}
     }
 
 	float GetAnalogScaled(UINT32 channel, float minimum, float maximum)
@@ -476,7 +491,6 @@ public:
 	
 	void ProcessLaunchStickExtreme3d()
 	{
-		float realLaunchSpeed = 0.75 + ScaleThrottleToPositive(LaunchStick.GetRawAxis(4));
 //		SmartDashboard::PutNumber("LaunchSpeed", realLaunchSpeed);
 		//ThrowerControl		
 		if(LaunchStick.GetRawButton(3))
@@ -492,11 +506,27 @@ public:
 			Thrower.SetMode(Catapult::LaunchHold);
 		}
 		
-		if(LaunchStick.GetRawButton(9) || LaunchStick.GetRawButton(10))
+		if(LaunchStick.GetRawButton(10))
 		{
 			Thrower.SetMode(Catapult::Idle);
 		}
-		if(LaunchStick.GetRawButton(1))
+		
+		float realLaunchSpeed = 0.75 + ScaleThrottleToPositive(LaunchStick.GetRawAxis(4));
+
+		if(LaunchStick.GetRawButton(7))
+		{
+			realLaunchSpeed = 1;
+		}
+		else if(LaunchStick.GetRawButton(9))
+		{
+			realLaunchSpeed = 0.875;
+		}
+		else if(LaunchStick.GetRawButton(11))
+		{
+			realLaunchSpeed = 0.75;
+		}
+		
+		if(LaunchStick.GetRawButton(1) || LaunchStick.GetRawButton(7) || LaunchStick.GetRawButton(9) || LaunchStick.GetRawButton(11))
 		{
 			Thrower.SetMode(Catapult::Idle);
 			Comp.Stop();
@@ -504,12 +534,12 @@ public:
 			Comp.Start();
 		}
 		
-		if(LaunchStick.GetRawButton(7) || LaunchStick.GetRawButton(8))
+		if(LaunchStick.GetRawButton(8))
 		{
 			Thrower.SetMode(Catapult::Manual);
 			Thrower.SetManual(-0.2);
 		}
-		else if(LaunchStick.GetRawButton(11) || LaunchStick.GetRawButton(12))
+		else if(LaunchStick.GetRawButton(12))
 		{
 			Thrower.SetMode(Catapult::Manual);
 			Thrower.SetManual(0.1);
@@ -544,8 +574,6 @@ public:
         while(IsOperatorControl() && IsEnabled())
         {
             ProcessDriveStick();
-			
-//            ProcessLaunchStickOther();
             ProcessLaunchStickExtreme3d();
             
 //            SmartDashboard::PutNumber("PotentiometerValue" , ThrowingPotent.GetVoltage());
