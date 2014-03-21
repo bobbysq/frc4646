@@ -54,9 +54,9 @@ private:
 
 };
 
-const float LOW_POT = 1.566;
-const float MID_POT = 1.951;
-const float HIGH_POT = 3.179;
+const float LOW_POT = 3.10;
+const float MID_POT = 3.482;
+const float HIGH_POT = 4.667;
 
 class Catapult
 {
@@ -160,12 +160,7 @@ enum CatapultModes
 	{
 		 PickupPosition= LOW_POT;
 		 CarryPosition = HIGH_POT;
-		 LaunchHoldPosition = MID_POT;
-
-		PickupPosition = 2.15;
-		CarryPosition = 1.9;
-		LaunchHoldPosition = 2;	 	
-	}
+		 LaunchHoldPosition = MID_POT;	}
 	
 	void InitializeVariablesFromParams(FILE* fp)
 	{
@@ -292,7 +287,7 @@ class RobotDemo : public SimpleRobot
 	Timer AutoTime;
 	
 	bool PreviousTrigger;
-	bool ShiftedLastTime;
+	int ShiftedCounter;
 	
 public:
 	RobotDemo(void):
@@ -331,7 +326,7 @@ public:
 		
 		LaunchTime(.3),
 		PreviousTrigger(true),
-		ShiftedLastTime(false)
+		ShiftedCounter(0)
 
 	{		
 		LiveWindow::GetInstance()->AddSensor("Thrower","Potentiometer",&ThrowingPotent);
@@ -378,7 +373,7 @@ public:
 		ShiftDown.Set(true);
 		CatapultEnable.Set(true);
 		PreviousTrigger = false;
-		ShiftedLastTime = false;
+		ShiftedCounter = false;
 		Wait(0.02);
 //		BackboardIn.Set(false);
 		RollerUp.Set(false);
@@ -450,11 +445,15 @@ public:
 		
 		bool currentTrigger = DriveStickLeft.GetRawButton(1) || DriveStickRight.GetRawButton(1);
 		
-		if(ShiftedLastTime)
+		
+		if(ShiftedCounter)
 		{
-			ShiftDown.Set(false);
-			ShiftUp.Set(false);
-			ShiftedLastTime = false;
+			ShiftedCounter --;
+			if(ShiftedCounter)
+			{
+				ShiftDown.Set(false);
+				ShiftUp.Set(false);
+			}
 		}
 		
 		if(currentTrigger != PreviousTrigger)
@@ -468,7 +467,7 @@ public:
 				ShiftDown.Set(true);
 			}
 			PreviousTrigger = currentTrigger;
-			ShiftedLastTime = true;
+			ShiftedCounter = 20;
 		}
     }
 
@@ -491,7 +490,6 @@ public:
 	
 	void ProcessLaunchStickExtreme3d()
 	{
-//		SmartDashboard::PutNumber("LaunchSpeed", realLaunchSpeed);
 		//ThrowerControl		
 		if(LaunchStick.GetRawButton(3))
 		{
@@ -513,6 +511,14 @@ public:
 		
 		float realLaunchSpeed = 0.75 + ScaleThrottleToPositive(LaunchStick.GetRawAxis(4));
 
+		static int SendCount = 10;
+		SendCount--;
+		if(SendCount == 0)
+		{
+			SendCount = 10;
+			SmartDashboard::PutNumber("LaunchSpeed", realLaunchSpeed);
+		}
+		
 		if(LaunchStick.GetRawButton(7))
 		{
 			realLaunchSpeed = 1;
