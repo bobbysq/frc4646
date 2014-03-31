@@ -385,8 +385,10 @@ public:
 	void Autonomous(void)
 	{
 		myRobot.SetSafetyEnabled(false);
+		ShiftDown.Set(true);
 		CatapultEnable.Set(true);
 		Wait(0.02);
+		ShiftDown.Set(false);
 		CatapultEnable.Set(false);
 		
 		myRobot.Drive(0.5, 0);
