@@ -438,7 +438,7 @@ public:
 		float driveLeft = DriveStickLeft.GetY();
 		float driveRight = DriveStickRight.GetY();
 		
-		if(DriveStickRight.GetRawButton(2))
+		if(DriveStickRight.GetRawButton(2) || DriveStickLeft.GetRawButton(2))
 		{
 			driveLeft = driveLeft * 0.5;
 			driveRight = driveRight * 0.5;
