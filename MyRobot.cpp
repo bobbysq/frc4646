@@ -3,60 +3,10 @@
 #include "Notifier.h"
 #include "Timer.h"
 
-class BellRinger
-{
-	SpeedController& RingerMotor;
-	Timer RingTime;
-	bool isRinging;
-public:
-	BellRinger(SpeedController& motor)
-	: RingerMotor(motor)
-	, RingTime()
-	, isRinging(false)
-	{
-		RingTime.Start();
-	}
-	
-	void ProcessButton(bool shouldRing, bool shouldReverse)
-	{
-		if (shouldRing)
-		{
-			if(!isRinging)
-			{
-				RingTime.Reset();
-				RingerMotor.Set(0.5);
-				isRinging = true;
-			}
-			else
-			{
-				if(RingTime.HasPeriodPassed(0.2))
-				{
-					RingerMotor.Set(-RingerMotor.Get());
-					RingTime.Reset();
-				}
-			}
-		}
-		else
-		{
-			isRinging = false;
-			if(shouldReverse)
-			{
-				RingerMotor.Set(-.5);
-			}
-			else 
-			{
-				RingerMotor.Set(0);
-			}
-		}
-	}
-
-private:
-
-};
-
 const float LOW_POT = 3.10;
 const float MID_POT = 3.482;
 const float HIGH_POT = 4.667;
+
 
 class Catapult
 {
@@ -239,6 +189,7 @@ private:
 	float LaunchHoldPosition;
 };
 
+
 /**
  * This is a demo program showing the use of the RobotBase class.
  * The SimpleRobot class is the base of a robot application that will automatically call your
@@ -254,12 +205,8 @@ class RobotDemo : public SimpleRobot
 	CANJaguar CatapultDriveRight3;
 	CANJaguar CatapultDriveRight4;
 	Talon RollerDrive;
-//	Solenoid BackboardOut;
-//	Solenoid BackboardIn;
 	Solenoid RollerDown;
 	Solenoid RollerUp;
-//	Solenoid DefenceUp;
-//	Solenoid DefenceDown;
 	Solenoid CatapultEnable;
 	Solenoid ShiftUp;
 	Solenoid ShiftDown;
@@ -298,12 +245,8 @@ public:
 		CatapultDriveRight3 (6),
 		CatapultDriveRight4 (7),
 		RollerDrive (3),
-//		BackboardOut(8),
-//		BackboardIn(7),
 		RollerDown(1),
 		RollerUp(2),
-//		DefenceUp(6),
-//		DefenceDown(5),
 		CatapultEnable(7),
 		ShiftUp(3),
 		ShiftDown(4),
@@ -367,17 +310,13 @@ public:
 	
 	void SetPneumaticsSafe()
 	{
-//		BackboardIn.Set(true);
 		RollerUp.Set(true);
-//		DefenceUp.Set(true);
 		ShiftDown.Set(true);
 		CatapultEnable.Set(true);
 		PreviousTrigger = false;
 		ShiftedCounter = false;
 		Wait(0.02);
-//		BackboardIn.Set(false);
 		RollerUp.Set(false);
-//		DefenceUp.Set(false);
 		ShiftDown.Set(false);
 		CatapultEnable.Set(false);
 	}
@@ -395,42 +334,6 @@ public:
 		Wait(2);
 		myRobot.Drive(0,0);
 		
-		//		float timeForRollersToGoUp = DriverStation::GetInstance()->GetAnalogIn(1);
-//		float powerForDrive = DriverStation::GetInstance()->GetAnalogIn(2);
-//		float timeForDrive = DriverStation::GetInstance()->GetAnalogIn(3);
-//		float powerForLaunch = DriverStation::GetInstance()->GetAnalogIn(4);
-//		
-//		AutoTime.Reset();
-//		AutoTime.Start();
-//		myRobot.SetSafetyEnabled(false);
-//		//SetPneumaticsSafe();
-//		ShiftUp.Set(true);
-//		RollerDown.Set(true);
-//		CatapultEnable.Set(true);
-//		Wait(0.02);
-//		ShiftUp.Set(false);
-//		RollerDown.Set(false);
-//		CatapultEnable.Set(false);
-//				
-//		Thrower.SetMode(Catapult::LaunchHold);
-//		RollerDrive.Set(0.3);
-//		while(!Thrower.IsClawBelowLaunchHold())
-//		{
-//			Thrower.ProcessMode();
-//			Wait(0.005);
-//		}
-//		
-//		
-//		RollerUp.Set(true);
-//		Wait(0.02);
-//		RollerUp.Set(false);
-//		
-//		
-//		Wait(timeForRollersToGoUp);
-//		myRobot.Drive(powerForDrive, 0);
-//		Wait(timeForDrive);
-//		Thrower.Launch(powerForLaunch, LaunchTime);
-//		myRobot.Drive(0, 0);
 	}
 	
 	void ProcessDriveStick()
@@ -565,33 +468,50 @@ public:
 		float rollerSpeed = LaunchStick.GetY();
 		if(rollerSpeed < 0.1 && rollerSpeed > -0.1)
 		{
-			rollerSpeed = 0;
+			raollerSpeed = 0;
 		}
 		RollerDrive.Set(rollerSpeed);		
 	}
 	
     void OperatorControl(void)
     {
-    	Comp.Start();
+    	Comp.Stop();
         InitializeVariablesFromParams();
         
-//		SmartDashboard::PutNumber("ValueIGotLaunchTime", LaunchTime);		
-//		Thrower.PrintVariablesToSmartDashboard();
+        NetworkTable * server = NetworkTable::GetTable("SmartDashboard");
 		
         myRobot.SetSafetyEnabled(true);
         while(IsOperatorControl() && IsEnabled())
         {
-            ProcessDriveStick();
-            ProcessLaunchStickExtreme3d();
+            //ProcessDriveStick();
+            //ProcessLaunchStickExtreme3d();
+        	
+        	''
+       	if(DriveStickLeft.GetRawButton(1))
+        	{
+        		//follow green noodle
+        		SmartDashboard::PutNumber("Blobs", server->GetNumber("BLOB_COUNT", 0.0));
+        		float blobCount=server->GetNumber("BLOB_COUNT");
+        		float greenX=server->GetNumber("GREEN_X");
+        		float imageWidth = server->GetNumber("IMAGE_WIDTH", 640);
+        		float error = greenX-(imageWidth/2);
+        		float scaledError = (error/(imageWidth/2));
+        		SmartDashboard::PutNumber("ScaledError",scaledError);
+        		SmartDashboard::PutNumber("imageWidth", imageWidth);
+        		SmartDashboard::PutNumber("error", error);
+        		myRobot.ArcadeDrive(0,-scaledError);
+        		
+        		
+        		
+        	}
+       	else
+       	{
+       		myRobot.ArcadeDrive(0.0,0.0);
+       	}
             
-//            SmartDashboard::PutNumber("PotentiometerValue" , ThrowingPotent.GetVoltage());
-//			SmartDashboard::PutNumber("LeftRollerUp", LeftRollerUp.Get());
-//			SmartDashboard::PutNumber("LeftRollerDown", LeftRollerDown.Get());
-//			SmartDashboard::PutNumber("RightRollerUp", RightRollerUp.Get());
-//			SmartDashboard::PutNumber("RightRollerDown", RightRollerDown.Get());
 			Wait(0.005);
 		}
-		Comp.Stop();
+		//Comp.Stop();
 	}
 	
 	void Test(void)
@@ -603,13 +523,11 @@ public:
 		{
 			LiveWindow::GetInstance()->Run();
 
-//			if(LaunchStick.GetRawButton(5))
 			if(LaunchStick.GetRawButton(3))
 			{
 				Thrower.SavePickup(ThrowingPotent.GetVoltage());
 				valuesChanged = true;
 			}
-//			if(LaunchStick.GetRawButton(4))
 			if(LaunchStick.GetRawButton(5))
 			{
 				Thrower.SaveCarry(ThrowingPotent.GetVoltage());
