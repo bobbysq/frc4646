@@ -486,15 +486,13 @@ public:
             //ProcessDriveStick();
             //ProcessLaunchStickExtreme3d();
         	
-        	''
        	if(DriveStickLeft.GetRawButton(1))
         	{
-        		//follow green noodle
-        		SmartDashboard::PutNumber("Blobs", server->GetNumber("BLOB_COUNT", 0.0));
-        		float blobCount=server->GetNumber("BLOB_COUNT");
-        		float greenX=server->GetNumber("GREEN_X");
+        		//Follow blue blob.
+        		float blueX=server->GetNumber("XMoment");
+        		float blueY=server->GetNumber("YMoment");
         		float imageWidth = server->GetNumber("IMAGE_WIDTH", 640);
-        		float error = greenX-(imageWidth/2);
+        		float error = blueX-(imageWidth/2);
         		float scaledError = (error/(imageWidth/2));
         		SmartDashboard::PutNumber("ScaledError",scaledError);
         		SmartDashboard::PutNumber("imageWidth", imageWidth);
@@ -508,7 +506,6 @@ public:
        	{
        		myRobot.ArcadeDrive(0.0,0.0);
        	}
-            
 			Wait(0.005);
 		}
 		//Comp.Stop();
