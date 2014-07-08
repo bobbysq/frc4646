@@ -468,7 +468,7 @@ public:
 		float rollerSpeed = LaunchStick.GetY();
 		if(rollerSpeed < 0.1 && rollerSpeed > -0.1)
 		{
-			raollerSpeed = 0;
+			rollerSpeed = 0;
 		}
 		RollerDrive.Set(rollerSpeed);		
 	}
