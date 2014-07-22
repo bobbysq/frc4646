@@ -497,7 +497,15 @@ public:
         		SmartDashboard::PutNumber("ScaledError",scaledError);
         		SmartDashboard::PutNumber("imageWidth", imageWidth);
         		SmartDashboard::PutNumber("error", error);
-        		myRobot.ArcadeDrive(0,-scaledError);
+        		if (scaledError > 0.4)
+        		{
+        			scaledError = 0.4;
+        		}
+        		if (scaledError < -0.4)
+        		{
+        			scaledError = -0.4;
+        		}
+        		myRobot.ArcadeDrive(0,-scaledError, false);
         		
         		
         		
