@@ -74,6 +74,7 @@ while True:
 
     # Defines the default values for the maximum blob area and the x & y moments of that blob
     maxArea = 0
+    largestContour = []
     cnt_xmomentMax = width / 2
     cnt_ymomentMax = height / 2
     
@@ -82,15 +83,37 @@ while True:
         # Finds the moment of each contour
         cnt_xmoment = int(M['m10']/M['m00'])
         cnt_ymoment = int(M['m01']/M['m00'])
-        
+        newArea = int(cv.contourArea(cnt))
         # If the contour is the largest currently detected, set the max x & y moment variables.
-        if (int(M['m00']) > maxArea):
-            maxArea = int(M['m00'])
+        if (newArea > maxArea):
+            maxArea = newArea
             cnt_xmomentMax = cnt_xmoment
             cnt_ymomentMax = cnt_ymoment
+            largestContour = cnt
         
-    # Draws the center of gravity of the largest contour    
-    cv.circle(result, (cnt_xmomentMax, cnt_ymomentMax), 10, (0,255,0), -1)
+    if len(largestContour) == 0:
+        continue
+        
+    approx = cv.approxPolyDP(largestContour, 3, True)    
+  #  boundingRect = cv.minAreaRect(approx)
+    (x,y), circleRadius = cv.minEnclosingCircle(approx)
+    circleCenter = (int(x), int(y))
+    circleRadius = int(circleRadius)
+    boundCircArea = math.pi * (circleRadius ** 2)
+    circleFit = maxArea / boundCircArea
+ #   print "%f %f" % (maxArea, boundCircArea)
+    isCircle = (circleFit > 0.70)
+    
+    
+#     for x in range(0, largestContour.size):
+#         cv.approxPolyDP(largestContour[x],)
+    # Draws the center of gravity of the largest contour 
+    color = (0,0,255)
+    if isCircle:
+        color = (0,255,0)
+       
+    cv.circle(result, (circleCenter), circleRadius, color, 2)   
+    cv.circle(result, (cnt_xmomentMax, cnt_ymomentMax), 10, color, -1)
     # Sends the X & Y moment variables over NetworkTables
     table.PutNumber('XMoment', cnt_xmomentMax)
     table.PutNumber('YMoment', cnt_ymomentMax)
@@ -113,19 +136,19 @@ while True:
     massInCircle = False
     
     # If any circles are found:
-    if circles is not None:
-        circles = np.uint16(np.around(circles))
-        for i in circles[0,:]:
-            # Determines if the center of gravity of the contour is within a circle
-            deltaX = i[0] - cnt_xmomentMax
-            deltaY = i[1] - cnt_ymomentMax
-            centerDistance = math.sqrt ((deltaX * deltaX) + (deltaY * deltaY))
-            if centerDistance < i[2]:
-                massInCircle = True
-            # draw the outer circle
-            cv.circle(result,(i[0],i[1]),i[2],(0,255,0),2)
-            # draw the center of the circle
-            cv.circle(result,(i[0],i[1]),2,(0,0,255),3)  
+#     if circles is not None:
+#         circles = np.uint16(np.around(circles))
+#         for i in circles[0,:]:
+#             # Determines if the center of gravity of the contour is within a circle
+#             deltaX = i[0] - cnt_xmomentMax
+#             deltaY = i[1] - cnt_ymomentMax
+#             centerDistance = math.sqrt ((deltaX * deltaX) + (deltaY * deltaY))
+#             if centerDistance < i[2]:
+#                 massInCircle = True
+#             # draw the outer circle
+#             cv.circle(result,(i[0],i[1]),i[2],(0,255,0),2)
+#             # draw the center of the circle
+#             cv.circle(result,(i[0],i[1]),2,(0,0,255),3)  
 
     cv.imshow('contours', contourimg)
     cv.imshow('image', frame)
