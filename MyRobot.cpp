@@ -472,50 +472,77 @@ public:
 		}
 		RollerDrive.Set(rollerSpeed);		
 	}
-	
+
+    float CalculateTurnAmount(NetworkTable * server)
+    {
+        //Follow blue blob.
+        float blueX = server->GetNumber("XMoment");
+        float blueY = server->GetNumber("YMoment");
+        float imageWidth = server->GetNumber("IMAGE_WIDTH", 640);
+        float error = blueX - (imageWidth / 2);
+        float scaledError = (error / (imageWidth / 2));
+        SmartDashboard::PutNumber("TurnError", scaledError);
+        SmartDashboard::PutNumber("imageWidth", imageWidth);
+        SmartDashboard::PutNumber("error", error);
+        if(scaledError > 0.3){
+            scaledError = 0.3;
+        }
+        if(scaledError < -0.3){
+            scaledError = -0.3;
+        }
+        return -scaledError;
+    }
+
+    float CalculateForwardAmount(NetworkTable *server)
+    {
+    	float scaledError = 0;
+        float ballDiameter = server->GetNumber("CIRCLE_DIAMETER");
+        float maxDiameter = server->GetNumber("MAX_DIAMETER");
+        float minDiameter = server->GetNumber("MIN_DIAMETER");
+        if(ballDiameter > minDiameter){
+            float error = maxDiameter - ballDiameter;
+            if(error < 0){
+                error = 0;
+            }
+            float scaleFactor = maxDiameter - minDiameter;
+            scaledError = error / scaleFactor;
+            if(scaledError > 0.3){
+                scaledError = 0.3;
+            }
+            scaledError = -scaledError;
+        }
+        server->PutNumber("ForwardError", scaledError);
+        return scaledError;
+    }
+
     void OperatorControl(void)
     {
-    	Comp.Stop();
+        Comp.Stop();
         InitializeVariablesFromParams();
-        
-        NetworkTable * server = NetworkTable::GetTable("SmartDashboard");
-		
+        NetworkTable *server = NetworkTable::GetTable("SmartDashboard");
         myRobot.SetSafetyEnabled(true);
-        while(IsOperatorControl() && IsEnabled())
-        {
-            //ProcessDriveStick();
-            //ProcessLaunchStickExtreme3d();
-        	
-       	if(DriveStickLeft.GetRawButton(1))
-        	{
-        		//Follow blue blob.
-        		float blueX=server->GetNumber("XMoment");
-        		float blueY=server->GetNumber("YMoment");
-        		float imageWidth = server->GetNumber("IMAGE_WIDTH", 640);
-        		float error = blueX-(imageWidth/2);
-        		float scaledError = (error/(imageWidth/2));
-        		SmartDashboard::PutNumber("ScaledError",scaledError);
-        		SmartDashboard::PutNumber("imageWidth", imageWidth);
-        		SmartDashboard::PutNumber("error", error);
-        		if (scaledError > 0.4)
-        		{
-        			scaledError = 0.4;
-        		}
-        		if (scaledError < -0.4)
-        		{
-        			scaledError = -0.4;
-        		}
-        		myRobot.ArcadeDrive(0,-scaledError, false);
-        		
-        		
-        		
+        while(IsOperatorControl() && IsEnabled()){
+        	//ProcessDriveStick();
+        	//ProcessLaunchStickExtreme3d();
+        	if(DriveStickLeft.GetRawButton(1)){
+        		float scaledError = CalculateTurnAmount(server);
+        		myRobot.ArcadeDrive(0, scaledError, false);
+        	}else if(DriveStickLeft.GetRawButton(2)){
+        		float scaledError = CalculateForwardAmount(server);
+        		myRobot.ArcadeDrive(scaledError, 0, false);
         	}
-       	else
-       	{
-       		myRobot.ArcadeDrive(0.0,0.0);
-       	}
-			Wait(0.005);
-		}
+        	else if(DriveStickLeft.GetRawButton(3))
+        	{
+        		float turnError = CalculateTurnAmount(server);
+        		float forwardError = CalculateForwardAmount(server);
+        		myRobot.ArcadeDrive(forwardError, turnError, false);
+        	}
+        	else
+        	{
+        		myRobot.ArcadeDrive(0.0,0.0);
+        	}
+        	Wait(0.005);
+        }
 		//Comp.Stop();
 	}
 	

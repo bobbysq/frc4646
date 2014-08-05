@@ -120,7 +120,9 @@ while True:
     
     # Sends the image width variable over NetworkTables
     table.PutNumber('IMAGE_WIDTH', width)
-    table.PutNumber('CIRCLERDIAMETER', circleRadius*2)
+    table.PutNumber('CIRCLE_DIAMETER', circleRadius*2)
+    table.PutNumber('MAX_DIAMETER', 335)
+    table.PutNumber('MIN_DIAMETER', 90)
     table.PutBoolean('ISCIRCLE', isCircle)
     '''
     # Show a marker at the Center of mass
