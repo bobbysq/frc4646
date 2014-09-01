@@ -4,16 +4,15 @@ import math
 from pynetworktables import *
 
 
-NetworkTable.SetIPAddress("10.46.46.2")
-#NetworkTable.SetIPAddress("127.0.0.1")
+#NetworkTable.SetIPAddress("10.46.46.2")
+NetworkTable.SetIPAddress("127.0.0.1")
 NetworkTable.SetClientMode()
 NetworkTable.Initialize()
 
 table = NetworkTable.GetTable("SmartDashboard")
 
-cameraURL = "http://FRC:FRC@10.46.46.11/axis-cgi/mjpeg/video.cgi?resolution=640x480"
-cap = cv.VideoCapture("http://FRC:FRC@10.46.46.11/mjpg/video.mjpg")
-#cap = cv.VideoCapture(1)
+#cap = cv.VideoCapture("http://FRC:FRC@10.46.46.11/mjpg/video.mjpg")
+cap = cv.VideoCapture(1)
 cap.set(cv.cv.CV_CAP_PROP_EXPOSURE, -4)
 
 # Define the kernels used for erosion and dilation
