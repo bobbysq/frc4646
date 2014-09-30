@@ -29,6 +29,10 @@ kernelDilate = np.ones((9,9), np.uint8)
 lower_blue = np.array([100, 70, 30])
 upper_blue = np.array([120, 255, 255])
 
+# Define range of red colors in HSV
+lower_red = np.array([160, 50, 50])
+upper_red = np.array([180, 200, 200])
+
 print 'ready for captures'
 
 Skip = False
@@ -37,8 +41,8 @@ while True:
     # Capture a frame
     is_connected, frame = cap.read()
 
-    cv.imshow('rawImage', frame)
-
+    cv.imshow('rawimage', frame)
+    
     # Discards the first frame of the image stream 
     if not is_connected: continue
     if Skip:
@@ -48,9 +52,12 @@ while True:
         Skip = True
     # Convert frame BGR to HSV
     hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
-   
+    
     # Threshold the HSV image to filter out the blues
-    mask = cv.inRange(hsv, lower_blue, upper_blue)
+    if (table.GetNumber("AllianceColor", 0) == 0):
+        mask = cv.inRange(hsv, lower_red, upper_red)
+    else:
+        mask = cv.inRange(hsv, lower_blue, upper_blue)
     cv.imshow('colors', mask)
     
     # Erode the image to get rid of noise

@@ -517,17 +517,16 @@ public:
 
     void OperatorControl(void)
     {
-        Comp.Stop();
+        Comp.Start();
+        SmartDashboard::PutNumber("AllianceColor", DriverStation::GetInstance()->GetAlliance());
         InitializeVariablesFromParams();
         NetworkTable *server = NetworkTable::GetTable("SmartDashboard");
         myRobot.SetSafetyEnabled(true);
         while(IsOperatorControl() && IsEnabled()){
-        	//ProcessDriveStick();
-        	//ProcessLaunchStickExtreme3d();
-        	if(DriveStickLeft.GetRawButton(1)){
+        	if(DriveStickLeft.GetRawButton(5)){
         		float scaledError = CalculateTurnAmount(server);
         		myRobot.ArcadeDrive(0, scaledError, false);
-        	}else if(DriveStickLeft.GetRawButton(2)){
+        	}else if(DriveStickLeft.GetRawButton(4)){
         		float scaledError = CalculateForwardAmount(server);
         		myRobot.ArcadeDrive(scaledError, 0, false);
         	}
@@ -539,7 +538,9 @@ public:
         	}
         	else
         	{
-        		myRobot.ArcadeDrive(0.0,0.0);
+        		ProcessDriveStick();
+	        	ProcessLaunchStickExtreme3d();
+        		//myRobot.ArcadeDrive(0.0,0.0);
         	}
         	Wait(0.005);
         }
