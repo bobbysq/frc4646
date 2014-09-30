@@ -3,6 +3,7 @@ import numpy as np
 import math
 from pynetworktables import *
 
+onRobot = True
 
 NetworkTable.SetIPAddress("10.46.46.2")
 #NetworkTable.SetIPAddress("127.0.0.1")
@@ -11,9 +12,13 @@ NetworkTable.Initialize()
 
 table = NetworkTable.GetTable("SmartDashboard")
 
-cameraURL = "http://FRC:FRC@10.46.46.11/axis-cgi/mjpeg/video.cgi?resolution=640x480"
+print 'setting up video capture'
+
 cap = cv.VideoCapture("http://FRC:FRC@10.46.46.11/mjpg/video.mjpg")
 #cap = cv.VideoCapture(1)
+
+print 'capture created'
+
 cap.set(cv.cv.CV_CAP_PROP_EXPOSURE, -4)
 
 # Define the kernels used for erosion and dilation
@@ -24,26 +29,26 @@ kernelDilate = np.ones((9,9), np.uint8)
 lower_blue = np.array([100, 70, 30])
 upper_blue = np.array([120, 255, 255])
 
-# Define an array with ordered numbers for Center of Mass Calculation
-x_distances = np.arange(0,640, dtype=np.uint32)
-y_distances = np.arange(0,480, dtype=np.uint32)
+print 'ready for captures'
 
-# Flood fill mask
-contoursbg = np.zeros((480, 640), np.uint8)
-
-
+Skip = False
 while True:
   
     # Capture a frame
     is_connected, frame = cap.read()
-    
+
+    cv.imshow('rawImage', frame)
+
     # Discards the first frame of the image stream 
     if not is_connected: continue
-    
+    if Skip:
+        Skip = False
+        continue
+    else:
+        Skip = True
     # Convert frame BGR to HSV
     hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
-    
-    
+   
     # Threshold the HSV image to filter out the blues
     mask = cv.inRange(hsv, lower_blue, upper_blue)
     cv.imshow('colors', mask)
@@ -63,7 +68,7 @@ while True:
      
     for cnt in contour:
         cv.drawContours(dilate, [cnt], 0, 255, -1)
-        cv.drawContours(contourimg, [cnt], 0, 255, 5)
+    #    cv.drawContours(contourimg, [cnt], 0, 255, 5)
       
       
     # Mask the original image with the mask to show detected regions
@@ -135,7 +140,7 @@ while True:
     #circles = cv.HoughCircles (dilate, cv.cv.CV_HOUGH_GRADIENT, 1, dilate.rows/8, 200, 100, 0, 0)
    
     # Finds circles in the contours
-    circles = cv.HoughCircles(contourimg, cv.cv.CV_HOUGH_GRADIENT, 1, 20, param1=50,param2=30,minRadius=0,maxRadius=0)
+    #circles = cv.HoughCircles(contourimg, cv.cv.CV_HOUGH_GRADIENT, 1, 20, param1=50,param2=30,minRadius=0,maxRadius=0)
 
     massInCircle = False
     
@@ -154,12 +159,12 @@ while True:
 #             # draw the center of the circle
 #             cv.circle(result,(i[0],i[1]),2,(0,0,255),3)  
 
-    cv.imshow('contours', contourimg)
-    cv.imshow('image', frame)
+   # cv.imshow('contours', contourimg)
+    #cv.imshow('image', frame)
     #cv.imshow('mask', mask)
     cv.imshow('result', result)
     #cv.imshow('erode', erode)
-    cv.imshow('dilate', dilate)
+    #cv.imshow('dilate', dilate)
   
     # Break if a key is pressed
     k = cv.waitKey(1) & 0xFF
@@ -175,12 +180,12 @@ cv.destroyAllWindows()
 # Dark HSV:  231, 100, 20
 # Light HSV: 213, 69,  62
 
-# Kitchen Talbe Sunny morning settings
+# Kitchen Table Sunny morning settings
 # Dark  HSV: 231, 64, 56
 # Light HSV: 201, 73, 100
 
 
 # REDS
-# Kitchen Talbe Sunny morning settings
+# Kitchen Table Sunny morning settings
 # Dark  HSV: 349, 89, 97
 # Light HSV: 12, 59, 100
