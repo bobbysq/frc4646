@@ -3,7 +3,6 @@ import numpy as np
 import math
 from pynetworktables import *
 
-
 #NetworkTable.SetIPAddress("10.46.46.2")
 NetworkTable.SetIPAddress("127.0.0.1")
 NetworkTable.SetClientMode()
@@ -23,18 +22,19 @@ kernelDilate = np.ones((9,9), np.uint8)
 lower_blue = np.array([100, 70, 30])
 upper_blue = np.array([120, 255, 255])
 
-# Define an array with ordered numbers for Center of Mass Calculation
-x_distances = np.arange(0,640, dtype=np.uint32)
-y_distances = np.arange(0,480, dtype=np.uint32)
+# Define range of red colors in HSV
+lower_red = np.array([160, 50, 50])
+upper_red = np.array([180, 200, 200])
 
-# Flood fill mask
-contoursbg = np.zeros((480, 640), np.uint8)
+print 'ready for captures'
 
-
+Skip = False
 while True:
   
     # Capture a frame
     is_connected, frame = cap.read()
+    
+    cv.imshow('rawimage', frame)
     
     # Discards the first frame of the image stream 
     if not is_connected: continue
@@ -44,7 +44,10 @@ while True:
     
     
     # Threshold the HSV image to filter out the blues
-    mask = cv.inRange(hsv, lower_blue, upper_blue)
+    if (table.GetNumber("AllianceColor", 0) == 0):
+        mask = cv.inRange(hsv, lower_red, upper_red)
+    else:
+        mask = cv.inRange(hsv, lower_blue, upper_blue)
     cv.imshow('colors', mask)
     
     # Erode the image to get rid of noise
