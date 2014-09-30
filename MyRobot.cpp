@@ -517,7 +517,8 @@ public:
 
     void OperatorControl(void)
     {
-        Comp.Stop();
+        Comp.Start();
+        SmartDashboard::PutNumber("AllianceColor", DriverStation::GetInstance()->GetAlliance());
         InitializeVariablesFromParams();
         NetworkTable *server = NetworkTable::GetTable("SmartDashboard");
         myRobot.SetSafetyEnabled(true);
