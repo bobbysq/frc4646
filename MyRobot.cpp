@@ -254,10 +254,10 @@ public:
 		Comp(1,8),
 		
 		ThrowingPotent(1),
-		LeftRollerUp(9),
-		LeftRollerDown(10),
-		RightRollerUp(7),
-		RightRollerDown(8),
+		LeftRollerUp(10),
+		LeftRollerDown(9),
+		RightRollerUp(8),
+		RightRollerDown(7),
 		myRobot(LeftDrive, RightDrive),
 		Thrower(CatapultDriveLeft1, CatapultDriveLeft2, CatapultDriveRight3, CatapultDriveRight4, ThrowingPotent),
 		DriveStickLeft(1),
@@ -328,8 +328,7 @@ public:
 		CatapultEnable.Set(true);
 		Wait(0.02);
 		ShiftDown.Set(false);
-		CatapultEnable.Set(false);
-		
+		CatapultEnable.Set(false);		
 		myRobot.Drive(0.5, 0);
 		Wait(2);
 		myRobot.Drive(0,0);
@@ -441,6 +440,15 @@ public:
 		{
 			Thrower.SetMode(Catapult::Idle);
 			Comp.Stop();
+			//raise rollers
+			RollerUp.Set(true);
+			Wait(0.005);
+			RollerUp.Set(false);
+			//wait for rollers up
+			while (LeftRollerUp.Get())
+			{
+				Wait(0.005);
+			}
 			Thrower.Launch(realLaunchSpeed, LaunchTime);
 			Comp.Start();
 		}
@@ -581,6 +589,9 @@ public:
 					valuesChanged = false;
 				}
 			}
+			
+//			SmartDashboard::PutNumber("LeftUpSensor", LeftRollerUp.Get());
+//			SmartDashboard::PutNumber("RightUpSensor", RightRollerUp.Get());
 			Wait(0.01);
 		}
 		Comp.Stop();
