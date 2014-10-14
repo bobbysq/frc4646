@@ -3,9 +3,9 @@
 #include "Notifier.h"
 #include "Timer.h"
 
-const float LOW_POT = 3.10;
-const float MID_POT = 3.482;
-const float HIGH_POT = 4.667;
+const float LOW_POT = 2.727;
+const float MID_POT = 3.523;
+const float HIGH_POT = 4.289;
 
 
 class Catapult
@@ -525,31 +525,34 @@ public:
 
     void OperatorControl(void)
     {
-        Comp.Start();
+        CatapultEnable.Set(true);
+        Wait(0.05);
+        CatapultEnable.Set(false);
+    	Comp.Start();
         SmartDashboard::PutNumber("AllianceColor", DriverStation::GetInstance()->GetAlliance());
         InitializeVariablesFromParams();
         NetworkTable *server = NetworkTable::GetTable("SmartDashboard");
         myRobot.SetSafetyEnabled(true);
         while(IsOperatorControl() && IsEnabled()){
-        	if(DriveStickLeft.GetRawButton(5)){
-        		float scaledError = CalculateTurnAmount(server);
-        		myRobot.ArcadeDrive(0, scaledError, false);
-        	}else if(DriveStickLeft.GetRawButton(4)){
-        		float scaledError = CalculateForwardAmount(server);
-        		myRobot.ArcadeDrive(scaledError, 0, false);
-        	}
-        	else if(DriveStickLeft.GetRawButton(3))
-        	{
-        		float turnError = CalculateTurnAmount(server);
-        		float forwardError = CalculateForwardAmount(server);
-        		myRobot.ArcadeDrive(forwardError, turnError, false);
-        	}
-        	else
+//        	if(DriveStickLeft.GetRawButton(5)){
+//        		float scaledError = CalculateTurnAmount(server);
+//        		myRobot.ArcadeDrive(0, scaledError, false);
+//        	}else if(DriveStickLeft.GetRawButton(4)){
+//        		float scaledError = CalculateForwardAmount(server);
+//        		myRobot.ArcadeDrive(scaledError, 0, false);
+//        	}
+//        	else if(DriveStickLeft.GetRawButton(3))
+//        	{
+//        		float turnError = CalculateTurnAmount(server);
+//        		float forwardError = CalculateForwardAmount(server);
+//        		myRobot.ArcadeDrive(forwardError, turnError, false);
+//        	}
+//        	else
         	{
         		ProcessDriveStick();
-	        	ProcessLaunchStickExtreme3d();
         		//myRobot.ArcadeDrive(0.0,0.0);
         	}
+        	ProcessLaunchStickExtreme3d();
         	Wait(0.005);
         }
 		//Comp.Stop();
@@ -589,7 +592,7 @@ public:
 					valuesChanged = false;
 				}
 			}
-			
+			SmartDashboard::PutNumber("PotValue", ThrowingPotent.GetVoltage());
 //			SmartDashboard::PutNumber("LeftUpSensor", LeftRollerUp.Get());
 //			SmartDashboard::PutNumber("RightUpSensor", RightRollerUp.Get());
 			Wait(0.01);
