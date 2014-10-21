@@ -1,9 +1,23 @@
+import os
 import cv2 as cv
 import numpy as np
 import math
 from pynetworktables import *
 
 onRobot = True
+
+while True:
+   cameraHostname = "10.46.46.11" #example
+   cameraResponse = os.system("ping -c 1 " + cameraHostname)
+   robotHostname = "10.46.46.2" #example
+   robotResponse = os.system("ping -c 1 " + robotHostname)
+
+   #and then check the response...
+   if cameraResponse == 0 and robotResponse == 0:
+      print('IT LIVES!')
+      break
+   else:
+      print('Don\'t be impatient!')
 
 NetworkTable.SetIPAddress("10.46.46.2")
 #NetworkTable.SetIPAddress("127.0.0.1")
@@ -29,10 +43,6 @@ kernelDilate = np.ones((9,9), np.uint8)
 lower_blue = np.array([100, 70, 30])
 upper_blue = np.array([120, 255, 255])
 
-# Define range of red colors in HSV
-lower_red = np.array([160, 50, 50])
-upper_red = np.array([180, 200, 200])
-
 print 'ready for captures'
 
 Skip = False
@@ -41,8 +51,9 @@ while True:
     # Capture a frame
     is_connected, frame = cap.read()
 
-    cv.imshow('rawimage', frame)
-    
+    if os.environ.get('DISPLAY', None):
+       cv.imshow('rawImage', frame)
+
     # Discards the first frame of the image stream 
     if not is_connected: continue
     if Skip:
@@ -52,13 +63,11 @@ while True:
         Skip = True
     # Convert frame BGR to HSV
     hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
-    
+   
     # Threshold the HSV image to filter out the blues
-    if (table.GetNumber("AllianceColor", 0) == 0):
-        mask = cv.inRange(hsv, lower_red, upper_red)
-    else:
-        mask = cv.inRange(hsv, lower_blue, upper_blue)
-    cv.imshow('colors', mask)
+    mask = cv.inRange(hsv, lower_blue, upper_blue)
+    if os.environ.get('DISPLAY', None):
+      cv.imshow('colors', mask)
     
     # Erode the image to get rid of noise
     erode = cv.erode(mask, kernelErode, iterations=2)
@@ -166,12 +175,14 @@ while True:
 #             # draw the center of the circle
 #             cv.circle(result,(i[0],i[1]),2,(0,0,255),3)  
 
-   # cv.imshow('contours', contourimg)
-    #cv.imshow('image', frame)
-    #cv.imshow('mask', mask)
-    cv.imshow('result', result)
-    #cv.imshow('erode', erode)
-    #cv.imshow('dilate', dilate)
+    if os.environ.get('DISPLAY', None):
+
+       #cv.imshow('contours', contourimg)
+       #cv.imshow('image', frame)
+       #cv.imshow('mask', mask)
+       cv.imshow('result', result)
+       #cv.imshow('erode', erode)
+       #cv.imshow('dilate', dilate)
   
     # Break if a key is pressed
     k = cv.waitKey(1) & 0xFF
