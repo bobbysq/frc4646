@@ -3,9 +3,9 @@
 #include "Notifier.h"
 #include "Timer.h"
 
-const float LOW_POT = 2.727;
-const float MID_POT = 3.523;
-const float HIGH_POT = 4.289;
+const float LOW_POT = 2.840;
+const float MID_POT = 3.235;
+const float HIGH_POT = 4.212;
 
 
 class Catapult
@@ -48,6 +48,10 @@ enum CatapultModes
 		}
 	}
 	
+	void Stop (){
+		Set(0);
+
+	}
 	
 	void Launch(float speed, float time)
 	{
@@ -439,6 +443,7 @@ public:
 		if(LaunchStick.GetRawButton(1) || LaunchStick.GetRawButton(7) || LaunchStick.GetRawButton(9) || LaunchStick.GetRawButton(11))
 		{
 			Thrower.SetMode(Catapult::Idle);
+			Thrower.Stop();
 			Comp.Stop();
 			//raise rollers
 			RollerUp.Set(true);
@@ -484,8 +489,8 @@ public:
     float CalculateTurnAmount(NetworkTable * server)
     {
         //Follow blue blob.
-        float blueX = server->GetNumber("XMoment");
-        float blueY = server->GetNumber("YMoment");
+        float blueX = server->GetNumber("XMoment", 320);
+        //float blueY = server->GetNumber("YMoment", 240);
         float imageWidth = server->GetNumber("IMAGE_WIDTH", 640);
         float error = blueX - (imageWidth / 2);
         float scaledError = (error / (imageWidth / 2));
@@ -504,9 +509,9 @@ public:
     float CalculateForwardAmount(NetworkTable *server)
     {
     	float scaledError = 0;
-        float ballDiameter = server->GetNumber("CIRCLE_DIAMETER");
-        float maxDiameter = server->GetNumber("MAX_DIAMETER");
-        float minDiameter = server->GetNumber("MIN_DIAMETER");
+        float ballDiameter = server->GetNumber("CIRCLE_DIAMETER", 480);
+        float maxDiameter = server->GetNumber("MAX_DIAMETER", 480);
+        float minDiameter = server->GetNumber("MIN_DIAMETER", 480);
         if(ballDiameter > minDiameter){
             float error = maxDiameter - ballDiameter;
             if(error < 0){
@@ -534,20 +539,20 @@ public:
         NetworkTable *server = NetworkTable::GetTable("SmartDashboard");
         myRobot.SetSafetyEnabled(true);
         while(IsOperatorControl() && IsEnabled()){
-//        	if(DriveStickLeft.GetRawButton(5)){
-//        		float scaledError = CalculateTurnAmount(server);
-//        		myRobot.ArcadeDrive(0, scaledError, false);
-//        	}else if(DriveStickLeft.GetRawButton(4)){
-//        		float scaledError = CalculateForwardAmount(server);
-//        		myRobot.ArcadeDrive(scaledError, 0, false);
-//        	}
-//        	else if(DriveStickLeft.GetRawButton(3))
-//        	{
-//        		float turnError = CalculateTurnAmount(server);
-//        		float forwardError = CalculateForwardAmount(server);
-//        		myRobot.ArcadeDrive(forwardError, turnError, false);
-//        	}
-//        	else
+        	if(DriveStickLeft.GetRawButton(5)){
+        		float scaledError = CalculateTurnAmount(server);
+        		myRobot.ArcadeDrive(0, scaledError, false);
+        	}else if(DriveStickLeft.GetRawButton(4)){
+        		float scaledError = CalculateForwardAmount(server);
+        		myRobot.ArcadeDrive(scaledError, 0, false);
+        	}
+        	else if(DriveStickLeft.GetRawButton(3))
+        	{
+        		float turnError = CalculateTurnAmount(server);
+        		float forwardError = CalculateForwardAmount(server);
+        		myRobot.ArcadeDrive(forwardError, turnError, false);
+        	}
+        	else
         	{
         		ProcessDriveStick();
         		//myRobot.ArcadeDrive(0.0,0.0);
